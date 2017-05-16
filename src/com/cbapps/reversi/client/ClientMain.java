@@ -1,12 +1,10 @@
-package client;
+package com.cbapps.reversi.client;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -24,16 +22,9 @@ public class ClientMain extends Application {
 		service = Executors.newCachedThreadPool();
 		service.submit(() -> {
 			try {
-				byte[] bytes = new byte[256];
-				InetAddress address = InetAddress.getByName("192.168.1.65");
-				int port = 4445;
-				DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, port);
-				DatagramSocket socket = new DatagramSocket();
-				socket.send(packet);
-				System.out.println("send packet");
-				//Socket socket = new Socket("192.168.1.65", 8000);
-				//DataOutputStream stream = new DataOutputStream(socket.getOutputStream());
-				//stream.writeUTF("Hello!");
+				Socket socket = new Socket(InetAddress.getLocalHost(), 8000);
+				DataOutputStream stream = new DataOutputStream(socket.getOutputStream());
+				stream.writeUTF("Hello!");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

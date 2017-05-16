@@ -1,3 +1,7 @@
+package com.cbapps.reversi.server;
+
+import com.cbapps.reversi.Player;
+import com.cbapps.reversi.ReversiSession;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -6,11 +10,11 @@ import javafx.scene.control.TextArea;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,30 +22,27 @@ import java.util.concurrent.Executors;
 /**
  * @author Coen Boelhouwers
  */
-public class Main extends Application {
+public class ServerMain extends Application {
 
-	private long lastNanos;
+	private int sessionCount;
 	private int port = 8000;
 	private ServerSocketChannel server;
 	private ExecutorService service;
-	private List<Session> sessions;
 
 	private TextArea textArea;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-		sessions = new ArrayList<>();
-
 		textArea = new TextArea();
 		service = Executors.newCachedThreadPool();
 		service.submit(() -> {
 			try {
 				server = ServerSocketChannel.open();
 				server.configureBlocking(false);
-				server.socket().bind(new InetSocketAddress(port));
+				server.socket().bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
 				log("Server started.\n" +
 						"IP: " + InetAddress.getLocalHost().getHostAddress() + "\n" +
-						"Port: " + port);
+						"Port: " + port + "\n");
 
 				while (!service.isShutdown()) {
 					if (!server.isOpen()) {
@@ -52,8 +53,10 @@ public class Main extends Application {
 						SocketChannel channel = server.accept();
 						if (channel != null) {
 							log("New player found (IP=" + channel.socket().getInetAddress().getHostAddress() +
-									").");
+									").\n");
 							Player newPlayer = new Player(channel.socket());
+							service.submit(new ReversiSession(5, 5,
+									Collections.singletonList(newPlayer), textArea).setSessionNr(sessionCount++));
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -75,7 +78,7 @@ public class Main extends Application {
 			}
 		}.start();*/
 		ScrollPane root = new ScrollPane(textArea);
-		new Session(10, 10);
+		//new ReversiSession(10, 10);
 		primaryStage.setScene(new Scene(root, 500, 500));
 		primaryStage.show();
 	}
@@ -95,6 +98,6 @@ public class Main extends Application {
 	}*/
 
 	public static void main(String[] args) {
-		launch(Main.class, args);
+		launch(ServerMain.class, args);
 	}
 }
