@@ -27,6 +27,7 @@ public class ClientMain extends Application {
 
 	private ExecutorService service;
 	private Label lblStatus = new Label();
+	private CellPane[][] cell = new CellPane[8][8];
 	private TextField Username;
 	Stage Window;
 	Scene scene1;
@@ -47,9 +48,9 @@ public class ClientMain extends Application {
 
 		//Layout 2
 		GridPane gridpane = new GridPane();
-		//for (int i = 0; i < 8; i++)
-		//for (int j = 0; j < 8; j++)
-		//gridpane.add(CellPane[i][j] = new CellPane(i,j), j, i);
+		for (int i = 0; i < 8; i++)
+		for (int j = 0; j < 8; j++)
+		gridpane.add(cell[i][j] = new CellPane(), j, i);
 
 		BorderPane borderPane = new BorderPane();
 		borderPane.setCenter(gridpane);
