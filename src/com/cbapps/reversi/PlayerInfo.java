@@ -25,4 +25,11 @@ public class PlayerInfo implements Serializable {
     public Paint getColor() {
         return Color.web(colorName);
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) return true;
+		if (!(obj instanceof PlayerInfo)) return false;
+		return this.getName().equals(((PlayerInfo) obj).getName());
+	}
 }

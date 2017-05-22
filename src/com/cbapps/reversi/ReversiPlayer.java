@@ -29,16 +29,20 @@ public class ReversiPlayer {
 		this(p.getName(), p.getColor(), s);
 	}
 
+	public DataInputStream getInputStream() {
+		return inputStream;
+	}
+
+	public DataOutputStream getOutputStream() {
+		return outputStream;
+	}
+
 	public String getName() {
 		return name;
 	}
 
 	public Paint getColor() {
 		return color;
-	}
-
-	public String getMessage() throws IOException {
-		return inputStream.readUTF();
 	}
 
 	public void setSessionId(int sessionId) {

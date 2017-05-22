@@ -93,7 +93,7 @@ public class ServerMain extends Application {
 											.setSessionNr(sessions.size());
 									newSession.addPlayer(player);
 									sessions.add(newSession);
-									service.submit(newSession);
+									newSession.begin(service);
 									log("Started a new session named '" + newSession.getSessionName() +
 											"' and added player '" + player.getName() + "'.\n");
 								}
