@@ -16,17 +16,17 @@ public class ReversiSession implements Runnable {
 	public static final int EMPTY_FIELD = 0;
 
 	private int[][] board;
+	private String sessionName;
 	private int sessionNr;
 	private TextInputControl logArea;
 	private int activePlayer = 0;
 	private List<ReversiPlayer> players;
 
-	public ReversiSession(int boardWidth, int boardHeight, Collection<ReversiPlayer> players,
-						  TextInputControl logArea) {
+	public ReversiSession(String sessionName, int boardWidth, int boardHeight, TextInputControl logArea) {
+		this.sessionName = sessionName;
 		board = new int[boardWidth][boardHeight];
 		this.logArea = logArea;
 		this.players = new ArrayList<>();
-		this.players.addAll(players);
 	}
 
 	public void addPlayer(ReversiPlayer player){
@@ -34,7 +34,9 @@ public class ReversiSession implements Runnable {
 		players.add(player);
 	}
 
-
+	public String getSessionName() {
+		return sessionName;
+	}
 
 	public ReversiSession setSessionNr(int nr) {
 		this.sessionNr = nr;
