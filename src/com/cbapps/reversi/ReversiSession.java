@@ -1,7 +1,6 @@
 package com.cbapps.reversi;
 
 import javafx.application.Platform;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
 
 import java.io.IOException;
@@ -20,15 +19,22 @@ public class ReversiSession implements Runnable {
 	private int sessionNr;
 	private TextInputControl logArea;
 	private int activePlayer = 0;
-	private List<Player> players;
+	private List<ReversiPlayer> players;
 
-	public ReversiSession(int boardWidth, int boardHeight, Collection<Player> players,
+	public ReversiSession(int boardWidth, int boardHeight, Collection<ReversiPlayer> players,
 						  TextInputControl logArea) {
 		board = new int[boardWidth][boardHeight];
 		this.logArea = logArea;
 		this.players = new ArrayList<>();
 		this.players.addAll(players);
 	}
+
+	public void addPlayer(ReversiPlayer player){
+		player.setSessionId(players.size()+1);
+		players.add(player);
+	}
+
+
 
 	public ReversiSession setSessionNr(int nr) {
 		this.sessionNr = nr;
@@ -40,7 +46,7 @@ public class ReversiSession implements Runnable {
 		while (true) {
 			try {
 				String s = players.get(activePlayer).getMessage();
-				Platform.runLater(() -> logArea.appendText("Session " + sessionNr + "|Player " + activePlayer +
+				Platform.runLater(() -> logArea.appendText("Session " + sessionNr + "|ReversiPlayer " + activePlayer +
 						": " + s + "\n"));
 			} catch (IOException e) {
 				e.printStackTrace();

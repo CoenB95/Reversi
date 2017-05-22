@@ -1,6 +1,6 @@
 package com.cbapps.reversi.server;
 
-import com.cbapps.reversi.Player;
+import com.cbapps.reversi.ReversiPlayer;
 import com.cbapps.reversi.ReversiSession;
 import com.cbapps.reversi.client.CellPane;
 import javafx.application.Application;
@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -56,7 +54,7 @@ public class ServerMain extends Application {
 						if (channel != null) {
 							log("New player found (IP=" + channel.socket().getInetAddress().getHostAddress() +
 									").\n");
-							Player newPlayer = new Player(channel.socket());
+							ReversiPlayer newPlayer = new ReversiPlayer(channel.socket());
 							service.submit(new ReversiSession(5, 5,
 									Collections.singletonList(newPlayer), textArea).setSessionNr(sessionCount++));
 						}
