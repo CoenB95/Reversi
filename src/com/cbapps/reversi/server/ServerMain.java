@@ -2,11 +2,13 @@ package com.cbapps.reversi.server;
 
 import com.cbapps.reversi.Player;
 import com.cbapps.reversi.ReversiSession;
+import com.cbapps.reversi.client.CellPane;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -78,8 +80,10 @@ public class ServerMain extends Application {
 			}
 		}.start();*/
 		ScrollPane root = new ScrollPane(textArea);
+		BorderPane borderPane = new BorderPane(root);
+		borderPane.setBottom(new CellPane());
 		//new ReversiSession(10, 10);
-		primaryStage.setScene(new Scene(root, 500, 500));
+		primaryStage.setScene(new Scene(borderPane, 500, 500));
 		primaryStage.show();
 	}
 
