@@ -1,24 +1,14 @@
 package com.cbapps.reversi;
 
-import java.io.*;
-import java.net.Socket;
+import javafx.scene.paint.Paint;
 
 /**
- * @author Coen Boelhouwers
+ * Created by Gijs on 22-5-2017.
  */
-public class Player {
-	private String name;
-	private Socket socket;
-	private DataInputStream inputStream;
-	private DataOutputStream outputStream;
 
-	public Player(Socket socket) throws IOException {
-		this.socket = socket;
-		this.inputStream = new DataInputStream(socket.getInputStream());
-		this.outputStream = new DataOutputStream(socket.getOutputStream());
-	}
+public abstract class Player {
+    private String name;
+    private Paint color;
 
-	public String getMessage() throws IOException {
-		return inputStream.readUTF();
-	}
+
 }
