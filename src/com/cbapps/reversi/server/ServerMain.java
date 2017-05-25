@@ -92,7 +92,6 @@ public class ServerMain extends Application {
 										5, 5)
 										.setSessionNr(sessions.size());
 								sessionId = chosenSession.addPlayer(player);
-								chosenSession.startSession(service);
 								sessions.add(chosenSession);
 								log("Started a new session named '" + chosenSession.getSessionName() + "'\n");
 							}
@@ -102,6 +101,7 @@ public class ServerMain extends Application {
 									"' (sessionID = " + sessionId + ")\n");
 							oos.writeInt(sessionId);
 							oos.flush();
+							chosenSession.startSession(service);
 						}
 					} catch (Exception e) {
 						e.printStackTrace();

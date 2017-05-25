@@ -2,17 +2,14 @@ package com.cbapps.reversi;
 
 import com.cbapps.reversi.board.Board;
 import com.cbapps.reversi.server.ServerMain;
-import javafx.scene.control.TextInputControl;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * @author Coen Boelhouwers
@@ -25,6 +22,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private int sessionNr;
 	private int activePlayer = 0;
 	private List<ReversiPlayer> players;
+	private boolean setup = false;
 
 	public ReversiSession(String sessionName, int boardWidth, int boardHeight) {
 		this.board = new Board(boardWidth, boardHeight);
@@ -63,25 +61,25 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	}
 
 	public void startSession(ExecutorService service) {
+		if (setup) return;
+		setup = true;
 		if (players.isEmpty()) throw new IllegalStateException("Can't start session without any players");
 		this.service = service;
 		this.service.submit(() -> {
 			try {
-				DataInputStream dis = new DataInputStream(players.get(0).getInputStream());
+				ObjectInputStream dis = players.get(0).getInputStream();
 				ServerMain.log("[" + sessionName + "] Player '" + players.get(0).getName() +
 						"' can start the game.\n");
-				while (!service.isShutdown()) {
-					if (dis.available() > 0) break;
+				while (dis.readInt() != SERVER_RECEIVE_START_GAME) {
 					Thread.yield();
 				}
-				if (dis.readInt() == SERVER_RECEIVE_START_GAME) {
-					for (ReversiPlayer p : players) {
-						DataOutputStream dos = new DataOutputStream(p.getOutputStream());
-						dos.writeInt(SERVER_SEND_START_GAME);
-						dos.flush();
-					}
-					startGame();
+				System.out.println("Yes! Let's start this session!");
+				for (ReversiPlayer p : players) {
+					ObjectOutputStream dos = p.getOutputStream();
+					dos.writeInt(SERVER_SEND_START_GAME);
+					dos.flush();
 				}
+				startGame();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

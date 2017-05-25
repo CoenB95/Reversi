@@ -57,9 +57,11 @@ public class ClientMain extends Application implements ReversiConstants {
 		layout1.getChildren().addAll(welcomelabel, username, startGameButton);
 		scene1 = new Scene(layout1, 300, 300);
 		startGameButton.setOnAction(e -> {
+			System.out.println("Button pressed");
 			service.submit(() -> {
 				try {
-					DataOutputStream dos = new DataOutputStream(player.getOutputStream());
+					System.out.println("Send start game");
+					ObjectOutputStream dos = player.getOutputStream();
 					dos.writeInt(CLIENT_SEND_START_GAME);
 					dos.flush();
 				} catch (IOException e1) {
