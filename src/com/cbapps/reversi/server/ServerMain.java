@@ -1,6 +1,5 @@
 package com.cbapps.reversi.server;
 
-import com.cbapps.reversi.PlayerInfo;
 import com.cbapps.reversi.ReversiPlayer;
 import com.cbapps.reversi.ReversiSession;
 import com.cbapps.reversi.client.CellPane;
@@ -34,7 +33,7 @@ public class ServerMain extends Application {
 	private ServerSocketChannel server;
 	private ExecutorService service;
 
-	private TextArea textArea;
+	private static TextArea textArea;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
@@ -58,53 +57,51 @@ public class ServerMain extends Application {
 					try {
 						SocketChannel channel = server.accept();
 						if (channel != null) {
+							ReversiPlayer player = new ReversiPlayer(channel.socket());
+
 							//Request player's name
-							DataInputStream dis = new DataInputStream(channel.socket().getInputStream());
-							String playerName = dis.readUTF();
+							ObjectInputStream ois = player.getInputStream();
+							player.setName(ois.readUTF());
 
 							log("New player found (IP: " + channel.socket().getInetAddress().getHostAddress() +
-									", Player name: '" + playerName + "').\n");
+									", Player name: '" + player.getName() + "').\n");
 
 							//Send available sessions
-							ObjectOutputStream oos = new ObjectOutputStream(channel.socket().getOutputStream());
+							ObjectOutputStream oos = player.getOutputStream();
 							List<String> sessionNames = new ArrayList<>();
 							sessions.forEach(s -> sessionNames.add(s.getSessionName()));
-							log("Available sessions for '" + playerName + "':\n" + sessionNames + "\n");
+							log("Available sessions for '" + player.getName() + "':\n" + sessionNames + "\n");
 							oos.writeObject(sessionNames);
 							oos.flush();
 
 							//Receive chosen session
-							String chosenSession = dis.readUTF();
-							log("Player '" + playerName + "' chose for session '" + chosenSession + "'.\n");
+							String chosenSessionName = ois.readUTF();
+							log("Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.\n");
 
-							//Send the player his game-id.
-							PlayerInfo playerInfo = new PlayerInfo(p)
-							oos.writeObject();
+							//Match the sessionName with an actual session, create a new one with the
+							//name if there is no match.
+							ReversiSession chosenSession = sessions.stream()
+									.filter(s -> s.getSessionName().equals(chosenSessionName))
+									.findFirst().orElse(null);
 
-							ReversiPlayer player = new ReversiPlayer(playerInfoInfo, channel.socket());
-
+							int sessionId;
 							if (chosenSession != null) {
-								ReversiSession ses = sessions.stream()
-										.filter(s -> s.getSessionName().equals(chosenSession))
-										.findFirst().orElse(null);
-
-								if (ses != null) {
-									ses.addPlayer(player);
-									log("Added player '" + player + "' to session '" + ses.getSessionName() +
-											"'.\n");
-								} else {
-									ReversiSession newSession = new ReversiSession(chosenSession,
-											5, 5, textArea)
-											.setSessionNr(sessions.size());
-									newSession.addPlayer(player);
-									sessions.add(newSession);
-									newSession.begin(service);
-									log("Started a new session named '" + newSession.getSessionName() +
-											"' and added player '" + player.getName() + "'.\n");
-								}
+								sessionId = chosenSession.addPlayer(player);
 							} else {
-								log("The chosen session should not be null. Ignored request.\n");
+								chosenSession = new ReversiSession(chosenSessionName,
+										5, 5)
+										.setSessionNr(sessions.size());
+								sessionId = chosenSession.addPlayer(player);
+								chosenSession.startSession(service);
+								sessions.add(chosenSession);
+								log("Started a new session named '" + chosenSession.getSessionName() + "'\n");
 							}
+							//Acknowledge by sending back the sessionID.
+							player.setSessionId(sessionId);
+							log("Added player '" + player + "' to session '" + chosenSession.getSessionName() +
+									"' (sessionID = " + sessionId + ")\n");
+							oos.writeInt(sessionId);
+							oos.flush();
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -133,7 +130,7 @@ public class ServerMain extends Application {
 		primaryStage.show();
 	}
 
-	private void log(String text) {
+	public static void log(String text) {
 		Platform.runLater(() -> textArea.appendText(text));
 	}
 

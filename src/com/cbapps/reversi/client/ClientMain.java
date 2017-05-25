@@ -1,7 +1,9 @@
 package com.cbapps.reversi.client;
 
-import com.cbapps.reversi.PlayerInfo;
 import com.cbapps.reversi.ReversiConstants;
+import com.cbapps.reversi.ReversiPlayer;
+import com.cbapps.reversi.SimplePlayer;
+import com.cbapps.reversi.board.Board;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -12,10 +14,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.List;
@@ -27,28 +26,48 @@ import java.util.concurrent.Executors;
  */
 public class ClientMain extends Application implements ReversiConstants {
 
-	private PlayerInfo player;
-	private List<PlayerInfo> otherPlayers;
+	private ReversiPlayer player;
+	private List<SimplePlayer> otherPlayers;
 	private ExecutorService service;
 	private Label lblStatus = new Label();
 	private CellPane[][] cell = new CellPane[8][8];
 	private TextField username;
-	Stage window;
+	private Button startGameButton;
 	Scene scene1;
 	Scene scene2;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-		window = primaryStage;
+		service = Executors.newCachedThreadPool();
 
 		//Layout 1
 		VBox layout1 = new VBox(40);
 		Label welcomelabel = new Label("Welcome, Please insert name here.");
-		Button button = new Button("Start");
+		startGameButton = new Button("Start");
+		startGameButton.setDisable(true);
 		username = new TextField();
-		layout1.getChildren().addAll(welcomelabel, username, button);
+		username.setOnAction(event -> {
+			username.setDisable(true);
+			service.submit(() -> {
+				connectToServer(username.getText());
+				playGame();
+			});
+		});
+
+		layout1.getChildren().addAll(welcomelabel, username, startGameButton);
 		scene1 = new Scene(layout1, 300, 300);
-		button.setOnAction(e -> window.setScene(scene2));
+		startGameButton.setOnAction(e -> {
+			service.submit(() -> {
+				try {
+					DataOutputStream dos = new DataOutputStream(player.getOutputStream());
+					dos.writeInt(CLIENT_SEND_START_GAME);
+					dos.flush();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			});
+			primaryStage.setScene(scene2);
+		});
 
 		//Layout 2
 		GridPane gridpane = new GridPane();
@@ -61,50 +80,55 @@ public class ClientMain extends Application implements ReversiConstants {
 		borderPane.setBottom(lblStatus);
 		scene2 = new Scene(borderPane, 400, 400);
 
-		window.setScene(scene1);
-		window.setTitle("ReversiClient");
-		window.show();
-
-		player = new PlayerInfo("Coen", "white");
-
-		service = Executors.newCachedThreadPool();
-		service.submit(() -> {
-			connectToServer();
-			playGame();
-		});
+		primaryStage.setScene(scene1);
+		primaryStage.setTitle("ReversiClient");
+		primaryStage.show();
 	}
 
-	private void connectToServer() {
+	private void connectToServer(String playerName) {
 		try {
 			Socket socket = new Socket(InetAddress.getLocalHost(), 8000);
 
+			player = new ReversiPlayer(playerName, socket);
+
 			//Introduce yourself
-			ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-			oos.writeObject(player);
-			oos.flush();
+			ObjectOutputStream dos = player.getOutputStream();
+			dos.writeUTF(playerName);
+			dos.flush();
 
 			//Receive available sessions
-			ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+			ObjectInputStream ois = player.getInputStream();
 			List<String> availableSessions = (List<String>) ois.readObject();
 
-			String chosen;
+			String chosenSessionName;
 			if (availableSessions.isEmpty()) {
-				chosen = "Een of andere nieuwe sessie";
+				chosenSessionName = "Een of andere nieuwe sessie";
 			} else {
-				chosen = availableSessions.get(0);
+				chosenSessionName = availableSessions.get(0);
 			}
 
 			//Send session choice
-			oos.writeObject(chosen);
+			dos.writeUTF(chosenSessionName);
+			dos.flush();
 
-			DataInputStream dis = new DataInputStream(socket.getInputStream());
-			int command = dis.readInt();
-			while (command != CLIENT_RECEIVE_START_MOVE) {
+			//Receive the sessionID
+			player.setSessionId(ois.readInt());
+			System.out.println("Received sessionID: " + player.getSessionId());
+
+			//If we are the first player, we may start the game
+			if (player.getSessionId() == 1) startGameButton.setDisable(false);
+
+			//Now, the server will send info about which other players will contest.
+			int command;
+			while ((command = ois.readInt()) != CLIENT_RECEIVE_START_GAME) {
 				if (command == CLIENT_RECEIVE_PLAYER_ADDED) {
-					PlayerInfo otherPlayer = (PlayerInfo) ois.readObject();
+					System.out.println("Received player addition notification, expecting object");
+					SimplePlayer otherPlayer = (SimplePlayer) ois.readObject();
+					System.out.print("We'll be playing against " + otherPlayer);
 					otherPlayers.add(otherPlayer);
 				}
 			}
+			Board.setupPlayerColors(otherPlayers);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {

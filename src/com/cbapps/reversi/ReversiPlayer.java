@@ -1,5 +1,6 @@
 package com.cbapps.reversi;
 
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 
 import java.io.*;
@@ -8,50 +9,32 @@ import java.net.Socket;
 /**
  * @author Coen Boelhouwers
  */
-public class ReversiPlayer {
+public class ReversiPlayer extends SimplePlayer {
 
-	private String name;
-	private Paint color;
-	private Socket socket;
-	private DataInputStream inputStream;
-	private DataOutputStream outputStream;
-	private int SessionId;
+	private transient Socket socket;
+	private transient ObjectInputStream inputStream;
+	private transient ObjectOutputStream outputStream;
 
-	public ReversiPlayer(String name, Paint color, Socket socket) throws IOException {
-		this.name = name;
-		this.color = color;
+	public ReversiPlayer(Socket socket) throws IOException {
+		this("Unnamed", Color.BLACK, socket);
+	}
+
+	public ReversiPlayer(String name, Socket socket) throws IOException {
+		this(name, Color.BLACK, socket);
+	}
+
+	public ReversiPlayer(String name, Color color, Socket socket) throws IOException {
+		super(name, color);
 		this.socket = socket;
-		this.inputStream = new DataInputStream(socket.getInputStream());
-		this.outputStream = new DataOutputStream(socket.getOutputStream());
 	}
 
-	public ReversiPlayer(PlayerInfo p, Socket s) throws IOException {
-		this(p.getName(), p.getColor(), s);
-	}
-
-	public DataInputStream getInputStream() {
+	public ObjectInputStream getInputStream() throws IOException {
+		if (inputStream == null) inputStream = new ObjectInputStream(socket.getInputStream());
 		return inputStream;
 	}
 
-	public DataOutputStream getOutputStream() {
+	public ObjectOutputStream getOutputStream() throws IOException {
+		if (outputStream == null) outputStream = new ObjectOutputStream(socket.getOutputStream());
 		return outputStream;
 	}
-
-	public String getName() {
-		return name;
-	}
-
-	public Paint getColor() {
-		return color;
-	}
-
-	public void setSessionId(int sessionId) {
-		SessionId = sessionId;
-	}
-
-	public int getSessionId() {
-		return SessionId;
-	}
-
-
 }

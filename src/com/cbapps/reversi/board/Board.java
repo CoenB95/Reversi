@@ -1,5 +1,12 @@
 package com.cbapps.reversi.board;
 
+import com.cbapps.reversi.ReversiPlayer;
+import com.cbapps.reversi.SimplePlayer;
+import javafx.scene.paint.Color;
+
+import java.util.Collection;
+import java.util.List;
+
 /**
  * @author Coen Boelhouwers
  */
@@ -43,5 +50,12 @@ public class Board {
 
 	public void setOnCellChangedListener(OnCellChangedListener l) {
 		listener = l;
+	}
+
+	public static void setupPlayerColors(List<SimplePlayer> players) {
+		if (players.size() <= 2) {
+			players.get(0).setColor(Color.BLACK);
+			players.get(1).setColor(Color.WHITE);
+		}
 	}
 }
