@@ -12,6 +12,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -57,24 +58,28 @@ public class ServerMain extends Application {
 					try {
 						SocketChannel channel = server.accept();
 						if (channel != null) {
-							//Request player's name and color
-							ObjectInputStream ois = new ObjectInputStream(channel.socket().getInputStream());
-							PlayerInfo playerInfoInfo = (PlayerInfo) ois.readObject();
+							//Request player's name
+							DataInputStream dis = new DataInputStream(channel.socket().getInputStream());
+							String playerName = dis.readUTF();
 
-							log("New player found (IP=" + channel.socket().getInetAddress().getHostAddress() +
-									", PlayerInfo=" + playerInfoInfo + ").\n");
+							log("New player found (IP: " + channel.socket().getInetAddress().getHostAddress() +
+									", Player name: '" + playerName + "').\n");
 
 							//Send available sessions
 							ObjectOutputStream oos = new ObjectOutputStream(channel.socket().getOutputStream());
 							List<String> sessionNames = new ArrayList<>();
 							sessions.forEach(s -> sessionNames.add(s.getSessionName()));
-							log("Available sessions for " + playerInfoInfo + ":\n" + sessionNames);
+							log("Available sessions for '" + playerName + "':\n" + sessionNames + "\n");
 							oos.writeObject(sessionNames);
 							oos.flush();
 
 							//Receive chosen session
-							String chosenSession = (String) ois.readObject();
-							log("PlayerInfo " + playerInfoInfo + " chose for session '" + chosenSession + "'.\n");
+							String chosenSession = dis.readUTF();
+							log("Player '" + playerName + "' chose for session '" + chosenSession + "'.\n");
+
+							//Send the player his game-id.
+							PlayerInfo playerInfo = new PlayerInfo(p)
+							oos.writeObject();
 
 							ReversiPlayer player = new ReversiPlayer(playerInfoInfo, channel.socket());
 
