@@ -58,7 +58,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		VBox layout1 = new VBox(40);
 		Label welcomelabel = new Label("Welcome, Please insert name here.");
 		startGameButton = new Button("Start");
-		//startGameButton.setDisable(true);
+		startGameButton.setDisable(true);
 		username = new TextField();
 		username.setOnAction(event -> {
 			username.setDisable(true);
