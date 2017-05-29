@@ -97,7 +97,7 @@ public class ServerMain extends Application {
 							} else {
 								System.out.println("Session doesn't exist. Creating one with same name...");
 								chosenSession = new ReversiSession(chosenSessionName,
-										5, 5, service)
+										8, 8, service)
 										.setSessionNr(sessions.size());
 								System.out.println("Add player...");
 								sessionId = chosenSession.addPlayer(player);

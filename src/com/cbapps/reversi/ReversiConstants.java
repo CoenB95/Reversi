@@ -16,7 +16,7 @@ public interface ReversiConstants {
 	/**Usage: [START_MOVE]*/
 	int SERVER_SEND_START_MOVE = 3000;
 
-	/**Usage: [MOVE][int colums][int row]*/
+	/**Usage: [MOVE][int row][int column]*/
 	int SERVER_RECEIVE_MOVE = 3001;
 
 	/**Usage: [YOU_WON]*/
@@ -24,6 +24,9 @@ public interface ReversiConstants {
 
 	/**Usage: [OTHER_WON][int player_id]*/
 	int SERVER_SEND_OTHER_WON = 4500;
+
+	/**Usage: [OTHER_DID_MOVE][int player_id][int row][int column]*/
+	int SERVER_SEND_OTHER_DID_MOVE = 5000;
 
 	/**Usage: [ERROR][utfString message]*/
 	int SERVER_SEND_ERROR = 9000;
@@ -36,6 +39,7 @@ public interface ReversiConstants {
 	int CLIENT_RECEIVE_START_MOVE = SERVER_SEND_START_MOVE;
 	int CLIENT_RECEIVE_YOU_WON = SERVER_SEND_YOU_WON;
 	int CLIENT_RECEIVE_OTHER_WON = SERVER_SEND_OTHER_WON;
+	int CLIENT_RECEIVE_OTHER_DID_MOVE = SERVER_SEND_OTHER_DID_MOVE;
 	int CLIENT_RECEIVE_ERROR = SERVER_SEND_ERROR;
 	int CLIENT_SEND_ERROR = CLIENT_RECEIVE_ERROR;
 

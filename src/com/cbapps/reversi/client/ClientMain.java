@@ -31,13 +31,19 @@ public class ClientMain extends Application implements ReversiConstants {
 
 	private ReversiPlayer player;
 	private List<SimplePlayer> otherPlayers;
-	private ExecutorService service;
-	private Label lblStatus = new Label();
 	private Board board;
 	private CellPane[][] cell = new CellPane[8][8];
+	private ExecutorService service;
+
+	//Login Layout
 	private TextField username;
 	private Button startGameButton;
+
+	//Board Layout
 	private Scene boardScene;
+	private GridPane gridpane;
+	private Label lblStatus = new Label();
+
 	private Stage primaryStage;
 
 	private int playerIndex;
@@ -88,21 +94,31 @@ public class ClientMain extends Application implements ReversiConstants {
 		});
 
 		//Layout 2
-		GridPane gridpane = new GridPane();
+		gridpane = new GridPane();
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 8; j++) {
 				CellPane c = new CellPane(i, j);
 				c.setOnMouseClicked(event -> {
 					if (board.changeAllValidCells(c.getRow(), c.getColumn(),
-							otherPlayers.get(playerIndex).getSessionId())) {
-						playerIndex = (playerIndex + 1) % 2;
-						Platform.runLater(() -> lblStatus.setText("It's " + otherPlayers.get(playerIndex).getName() +
-								"'s turn!"));
+							player.getSessionId())) {
+						gridpane.setDisable(true);
+						Platform.runLater(() -> lblStatus.setText("Waiting for other player moves..."));
+						service.submit(() -> {
+							try {
+								player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
+								player.getOutputStream().writeInt(c.getRow());
+								player.getOutputStream().writeInt(c.getColumn());
+								player.getOutputStream().flush();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						});
 					}
 				});
 				gridpane.add(cell[i][j] = c, j, i);
 			}
 		}
+		gridpane.setDisable(true);
 
 		board = new Board(8, 8, (row, column, playerId) -> {
 			cell[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE);
@@ -173,12 +189,36 @@ public class ClientMain extends Application implements ReversiConstants {
 			System.out.println("Read start game signal");
 			int playerAmount = ois.readInt();
 			System.out.println("Total amount of player in this session: " + playerAmount);
-			for (int i = 0; i < playerAmount; i++) otherPlayers.add(
-					new SimplePlayer("Player " + (i + 1), Color.BLACK));
+			for (int i = 0; i < playerAmount; i++) {
+				if (i != player.getSessionId())
+					otherPlayers.add(new SimplePlayer("Player " + (i + 1), Color.BLACK));
+			}
 			Board.setupPlayerColors(otherPlayers);
 
 			//Go to board layout.
 			Platform.runLater(() -> primaryStage.setScene(boardScene));
+
+			//Actual game
+			while (true) {
+				int com = ois.readInt();
+				if (com == CLIENT_RECEIVE_OTHER_WON) {
+					int playerId = ois.readInt();
+					System.out.println("Other player won: Player " + playerId);
+					break;
+				} else if (com == CLIENT_RECEIVE_YOU_WON) {
+					System.out.println("Game ended.");
+					break;
+				} else if (com == CLIENT_RECEIVE_OTHER_DID_MOVE) {
+					int playerId = ois.readInt();
+					int row = ois.readInt();
+					int column = ois.readInt();
+					board.changeAllValidCells(row, column, playerId);
+				} else if (com == CLIENT_RECEIVE_START_MOVE) {
+					gridpane.setDisable(false);
+					Platform.runLater(() -> lblStatus.setText("It's your turn"));
+				}
+			}
+			System.out.println("Game ended.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

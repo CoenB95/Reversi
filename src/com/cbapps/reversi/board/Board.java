@@ -71,6 +71,15 @@ public class Board {
         return PlayerScore;
     }
 
+    public boolean isBoardFull() {
+    	for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board[0].length; j++) {
+				if (board[i][j] == EMPTY_CELL) return false;
+			}
+		}
+		return true;
+	}
+
     public boolean isOver() {
         boolean gameOver = false;
         int isOver = 0;

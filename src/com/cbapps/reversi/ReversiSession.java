@@ -83,7 +83,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 
 	public void startGame() {
 		ServerMain.log("[" + sessionName + "] Started game");
-		//service.submit(this);
+		service.submit(this);
 	}
 
 	public void startSession() {
@@ -139,15 +139,32 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	public void run() {
 		while (!service.isShutdown()) {
 			try {
-				ReversiPlayer currentPlayer = players.get(activePlayer);
-				currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
-				checkState(currentPlayer, SERVER_RECEIVE_MOVE);
-				int column = currentPlayer.getInputStream().readInt();
-				int row = currentPlayer.getInputStream().readInt();
+				while (!board.isBoardFull()) {
+					ReversiPlayer currentPlayer = players.get(activePlayer);
+					System.out.println("It's player " + currentPlayer + "'s turn.");
+					currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
+					currentPlayer.getOutputStream().flush();
+					checkState(currentPlayer, SERVER_RECEIVE_MOVE);
+					int row = currentPlayer.getInputStream().readInt();
+					int column = currentPlayer.getInputStream().readInt();
 
-				if (board.canPlace(column, row)) {
-
-				} else throwIllegalStateException("");
+					if (board.changeAllValidCells(row, column, currentPlayer.getSessionId())) {
+						System.out.println("Player did valid move.");
+						for (ReversiPlayer pl : players) {
+							if (!pl.equals(currentPlayer)) {
+								pl.getOutputStream().writeInt(SERVER_SEND_OTHER_DID_MOVE);
+								pl.getOutputStream().writeInt(currentPlayer.getSessionId());
+								pl.getOutputStream().writeInt(row);
+								pl.getOutputStream().writeInt(column);
+								pl.getOutputStream().flush();
+							}
+						}
+						activePlayer = (activePlayer + 1) % players.size();
+					} else {
+						System.out.println("Wrong move from player " + currentPlayer);
+					}
+				}
+				System.out.println("Board is full, game has ended.");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
