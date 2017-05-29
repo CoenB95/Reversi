@@ -82,7 +82,7 @@ public class ServerMain extends Application {
 							System.out.println("Received session choice: '" + chosenSessionName + "'");
 							log("Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.\n");
 
-							//Match the sessionName with an actual session, create a new one with the
+							//Match the sessionName with an actual session, create changeAllValidCells new one with the
 							//name if there is no match.
 							ReversiSession chosenSession = sessions.stream()
 									.filter(s -> s.getSessionName().equals(chosenSessionName))
@@ -103,7 +103,7 @@ public class ServerMain extends Application {
 								sessionId = chosenSession.addPlayer(player);
 								System.out.println("Player added.");
 								sessions.add(chosenSession);
-								log("Started a new session named '" + chosenSession.getSessionName() + "'\n");
+								log("Started changeAllValidCells new session named '" + chosenSession.getSessionName() + "'\n");
 							}
 							System.out.println("Player sessionId=" + sessionId);
 							//Acknowledge by sending back the sessionID.
@@ -141,7 +141,7 @@ public class ServerMain extends Application {
 		}.start();*/
 		ScrollPane root = new ScrollPane(textArea);
 		BorderPane borderPane = new BorderPane(root);
-		borderPane.setBottom(new CellPane());
+		borderPane.setBottom(new CellPane(0, 0));
 		//new ReversiSession(10, 10);
 		primaryStage.setScene(new Scene(borderPane, 500, 500));
 		primaryStage.show();

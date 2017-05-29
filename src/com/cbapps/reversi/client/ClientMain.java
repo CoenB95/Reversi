@@ -33,11 +33,14 @@ public class ClientMain extends Application implements ReversiConstants {
 	private List<SimplePlayer> otherPlayers;
 	private ExecutorService service;
 	private Label lblStatus = new Label();
+	private Board board;
 	private CellPane[][] cell = new CellPane[8][8];
 	private TextField username;
 	private Button startGameButton;
 	private Scene boardScene;
 	private Stage primaryStage;
+
+	private int playerIndex;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
@@ -45,11 +48,17 @@ public class ClientMain extends Application implements ReversiConstants {
 		service = Executors.newCachedThreadPool();
 		otherPlayers = new ArrayList<>();
 
+		player = new ReversiPlayer("Player 1", Color.WHITE, null);
+		player.setSessionId(1);
+		otherPlayers = new ArrayList<>();
+		otherPlayers.add(player);
+		otherPlayers.add(new SimplePlayer("Player 2", Color.WHITE).setSessionId(2));
+
 		//Layout 1
 		VBox layout1 = new VBox(40);
 		Label welcomelabel = new Label("Welcome, Please insert name here.");
 		startGameButton = new Button("Start");
-		startGameButton.setDisable(true);
+		//startGameButton.setDisable(true);
 		username = new TextField();
 		username.setOnAction(event -> {
 			username.setDisable(true);
@@ -80,9 +89,24 @@ public class ClientMain extends Application implements ReversiConstants {
 
 		//Layout 2
 		GridPane gridpane = new GridPane();
-		for (int i = 0; i < 8; i++)
-			for (int j = 0; j < 8; j++)
-				gridpane.add(cell[i][j] = new CellPane(), j, i);
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				CellPane c = new CellPane(i, j);
+				c.setOnMouseClicked(event -> {
+					if (board.changeAllValidCells(c.getRow(), c.getColumn(),
+							otherPlayers.get(playerIndex).getSessionId())) {
+						playerIndex = (playerIndex + 1) % 2;
+						Platform.runLater(() -> lblStatus.setText("It's " + otherPlayers.get(playerIndex).getName() +
+								"'s turn!"));
+					}
+				});
+				gridpane.add(cell[i][j] = c, j, i);
+			}
+		}
+
+		board = new Board(8, 8, (row, column, playerId) -> {
+			cell[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE);
+		});
 
 		BorderPane borderPane = new BorderPane();
 		borderPane.setCenter(gridpane);
