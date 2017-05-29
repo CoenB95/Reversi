@@ -89,11 +89,12 @@ public class ClientMain extends Application implements ReversiConstants {
 			for (int j = 0; j < 8; j++) {
 				CellPane c = new CellPane(i, j);
 				c.setOnMouseClicked(event -> {
-					board.a(c.getRow(), c.getColumn(), 0, 1,
-							otherPlayers.get(playerIndex).getSessionId());
-					playerIndex = (playerIndex + 1) % 2;
-					Platform.runLater(() -> lblStatus.setText("It's " + otherPlayers.get(playerIndex).getName() +
-							"'s turn!"));
+					if (board.changeAllValidCells(c.getRow(), c.getColumn(),
+							otherPlayers.get(playerIndex).getSessionId())) {
+						playerIndex = (playerIndex + 1) % 2;
+						Platform.runLater(() -> lblStatus.setText("It's " + otherPlayers.get(playerIndex).getName() +
+								"'s turn!"));
+					}
 				});
 				gridpane.add(cell[i][j] = c, j, i);
 			}

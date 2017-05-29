@@ -78,7 +78,7 @@ public class ServerMain extends Application {
 							String chosenSessionName = ois.readUTF();
 							log("Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.\n");
 
-							//Match the sessionName with an actual session, create a new one with the
+							//Match the sessionName with an actual session, create changeAllValidCells new one with the
 							//name if there is no match.
 							ReversiSession chosenSession = sessions.stream()
 									.filter(s -> s.getSessionName().equals(chosenSessionName))
@@ -93,7 +93,7 @@ public class ServerMain extends Application {
 										.setSessionNr(sessions.size());
 								sessionId = chosenSession.addPlayer(player);
 								sessions.add(chosenSession);
-								log("Started a new session named '" + chosenSession.getSessionName() + "'\n");
+								log("Started changeAllValidCells new session named '" + chosenSession.getSessionName() + "'\n");
 							}
 							//Acknowledge by sending back the sessionID.
 							player.setSessionId(sessionId);
