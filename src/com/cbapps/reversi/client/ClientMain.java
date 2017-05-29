@@ -5,6 +5,7 @@ import com.cbapps.reversi.ReversiPlayer;
 import com.cbapps.reversi.SimplePlayer;
 import com.cbapps.reversi.board.Board;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -12,6 +13,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -34,11 +36,12 @@ public class ClientMain extends Application implements ReversiConstants {
 	private CellPane[][] cell = new CellPane[8][8];
 	private TextField username;
 	private Button startGameButton;
-	Scene scene1;
-	Scene scene2;
+	private Scene boardScene;
+	private Stage primaryStage;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+		this.primaryStage = primaryStage;
 		service = Executors.newCachedThreadPool();
 		otherPlayers = new ArrayList<>();
 
@@ -57,7 +60,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		});
 
 		layout1.getChildren().addAll(welcomelabel, username, startGameButton);
-		scene1 = new Scene(layout1, 300, 300);
+		Scene loginScene = new Scene(layout1, 300, 300);
 		startGameButton.setOnAction(e -> {
 			System.out.println("Button pressed");
 			service.submit(() -> {
@@ -73,7 +76,6 @@ public class ClientMain extends Application implements ReversiConstants {
 					e1.printStackTrace();
 				}
 			});
-			primaryStage.setScene(scene2);
 		});
 
 		//Layout 2
@@ -85,9 +87,9 @@ public class ClientMain extends Application implements ReversiConstants {
 		BorderPane borderPane = new BorderPane();
 		borderPane.setCenter(gridpane);
 		borderPane.setBottom(lblStatus);
-		scene2 = new Scene(borderPane, 400, 400);
+		boardScene = new Scene(borderPane, 400, 400);
 
-		primaryStage.setScene(scene1);
+		primaryStage.setScene(loginScene);
 		primaryStage.setTitle("ReversiClient");
 		primaryStage.show();
 	}
@@ -145,7 +147,14 @@ public class ClientMain extends Application implements ReversiConstants {
 				//command = ois.readInt();
 			}
 			System.out.println("Read start game signal");
+			int playerAmount = ois.readInt();
+			System.out.println("Total amount of player in this session: " + playerAmount);
+			for (int i = 0; i < playerAmount; i++) otherPlayers.add(
+					new SimplePlayer("Player " + (i + 1), Color.BLACK));
 			Board.setupPlayerColors(otherPlayers);
+
+			//Go to board layout.
+			Platform.runLater(() -> primaryStage.setScene(boardScene));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

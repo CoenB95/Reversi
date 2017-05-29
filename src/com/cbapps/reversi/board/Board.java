@@ -53,7 +53,7 @@ public class Board {
 	}
 
 	public static void setupPlayerColors(List<SimplePlayer> players) {
-		if (players.size() <= 2) {
+		if (players.size() == 2) {
 			players.get(0).setColor(Color.BLACK);
 			players.get(1).setColor(Color.WHITE);
 		}

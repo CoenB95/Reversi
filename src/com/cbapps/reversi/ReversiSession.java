@@ -113,6 +113,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				for (ReversiPlayer p : players) {
 					ObjectOutputStream dos = p.getOutputStream();
 					dos.writeInt(SERVER_SEND_START_GAME);
+					dos.writeInt(players.size());
 					dos.flush();
 				}
 				startGame();

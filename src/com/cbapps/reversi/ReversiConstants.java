@@ -10,7 +10,7 @@ public interface ReversiConstants {
 	/**Usage: [START]*/
 	int SERVER_RECEIVE_START_GAME = 2000;
 
-	/**Usage: [START]*/
+	/**Usage: [START][int amountOfPlayers]*/
 	int SERVER_SEND_START_GAME = 2001;
 
 	/**Usage: [START_MOVE]*/
