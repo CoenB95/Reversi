@@ -23,13 +23,15 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.cbapps.reversi.ReversiConstants.SERVER_RECEIVE_START_GAME;
+
 /**
  * @author Coen Boelhouwers
  */
 public class ServerMain extends Application {
 
 	private List<ReversiSession> sessions;
-	private int port = 8000;
+	private int port = 8081;
 	private ServerSocketChannel server;
 	private ExecutorService service;
 
@@ -75,7 +77,9 @@ public class ServerMain extends Application {
 							oos.flush();
 
 							//Receive chosen session
+							System.out.println("Waiting for session choice...");
 							String chosenSessionName = ois.readUTF();
+							System.out.println("Received session choice: '" + chosenSessionName + "'");
 							log("Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.\n");
 
 							//Match the sessionName with an actual session, create a new one with the
@@ -83,26 +87,38 @@ public class ServerMain extends Application {
 							ReversiSession chosenSession = sessions.stream()
 									.filter(s -> s.getSessionName().equals(chosenSessionName))
 									.findFirst().orElse(null);
+							System.out.println("Searching session...");
 
 							int sessionId;
 							if (chosenSession != null) {
+								System.out.println("Session exists. Add player...");
 								sessionId = chosenSession.addPlayer(player);
+								System.out.println("Player added.");
 							} else {
+								System.out.println("Session doesn't exist. Creating one with same name...");
 								chosenSession = new ReversiSession(chosenSessionName,
 										5, 5)
 										.setSessionNr(sessions.size());
+								System.out.println("Add player...");
 								sessionId = chosenSession.addPlayer(player);
+								System.out.println("Player added.");
 								sessions.add(chosenSession);
 								log("Started a new session named '" + chosenSession.getSessionName() + "'\n");
 							}
+							System.out.println("Player sessionId=" + sessionId);
 							//Acknowledge by sending back the sessionID.
 							player.setSessionId(sessionId);
 							log("Added player '" + player + "' to session '" + chosenSession.getSessionName() +
 									"' (sessionID = " + sessionId + ")\n");
+							System.out.println("Send sessionID...");
 							oos.writeInt(sessionId);
 							oos.flush();
+							System.out.println("SessionID send, start session if needed.");
 							chosenSession.startSession(service);
+							//int u = ois.readInt();
+							//System.out.println("Server Thread! '" + u + "'");
 						}
+						Thread.sleep(100);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

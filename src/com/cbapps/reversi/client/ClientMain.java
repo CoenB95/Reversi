@@ -17,6 +17,7 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,6 +40,7 @@ public class ClientMain extends Application implements ReversiConstants {
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		service = Executors.newCachedThreadPool();
+		otherPlayers = new ArrayList<>();
 
 		//Layout 1
 		VBox layout1 = new VBox(40);
@@ -62,8 +64,11 @@ public class ClientMain extends Application implements ReversiConstants {
 				try {
 					System.out.println("Send start game");
 					ObjectOutputStream dos = player.getOutputStream();
+					System.out.println("- writeInt");
 					dos.writeInt(CLIENT_SEND_START_GAME);
+					System.out.println("- flush");
 					dos.flush();
+					System.out.println("- done");
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -89,7 +94,7 @@ public class ClientMain extends Application implements ReversiConstants {
 
 	private void connectToServer(String playerName) {
 		try {
-			Socket socket = new Socket(InetAddress.getLocalHost(), 8000);
+			Socket socket = new Socket(InetAddress.getLocalHost(), 8081);
 
 			player = new ReversiPlayer(playerName, socket);
 
@@ -121,19 +126,27 @@ public class ClientMain extends Application implements ReversiConstants {
 			if (player.getSessionId() == 1) startGameButton.setDisable(false);
 
 			//Now, the server will send info about which other players will contest.
-			int command;
+			int avail;
+			int command = 0;// = ois.readInt();
 			while ((command = ois.readInt()) != CLIENT_RECEIVE_START_GAME) {
+				System.out.println("a Received '" + command + "'");
 				if (command == CLIENT_RECEIVE_PLAYER_ADDED) {
 					System.out.println("Received player addition notification, expecting object");
 					SimplePlayer otherPlayer = (SimplePlayer) ois.readObject();
 					System.out.print("We'll be playing against " + otherPlayer);
 					otherPlayers.add(otherPlayer);
 				}
+				command = 0;
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				//command = ois.readInt();
 			}
+			System.out.println("Read start game signal");
 			Board.setupPlayerColors(otherPlayers);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

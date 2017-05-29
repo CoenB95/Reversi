@@ -28,12 +28,12 @@ public class ReversiPlayer extends SimplePlayer {
 		this.socket = socket;
 	}
 
-	public ObjectInputStream getInputStream() throws IOException {
+	public synchronized ObjectInputStream getInputStream() throws IOException {
 		if (inputStream == null) inputStream = new ObjectInputStream(socket.getInputStream());
 		return inputStream;
 	}
 
-	public ObjectOutputStream getOutputStream() throws IOException {
+	public synchronized ObjectOutputStream getOutputStream() throws IOException {
 		if (outputStream == null) outputStream = new ObjectOutputStream(socket.getOutputStream());
 		return outputStream;
 	}

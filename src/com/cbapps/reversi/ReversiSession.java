@@ -32,16 +32,26 @@ public class ReversiSession implements Runnable, ReversiConstants {
 
 	public int addPlayer(ReversiPlayer player){
 		int id = players.size()+1;
-		players.forEach(p -> {
-			try {
-				ObjectOutputStream oos = p.getOutputStream();
-				oos.writeInt(SERVER_SEND_PLAYER_ADDED);
-				oos.writeObject(player);
-				oos.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
+		synchronized (this) {
+			players.forEach(p -> {
+				try {
+					System.out.println("addPlayer - send player addition to " + p + "; getOutput");
+					ObjectOutputStream oos = p.getOutputStream();
+					oos.flush();
+					System.out.println("addPlayer - writeInt");
+					oos.writeInt(SERVER_SEND_PLAYER_ADDED);
+					System.out.println("addPlayer - flush");
+					oos.flush();
+					System.out.println("addplayer - writeObject");
+					oos.writeObject(player);
+					System.out.println("addPlayer - flush");
+					oos.flush();
+					System.out.println("addPlayer - send.");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+		}
 		players.add(player);
 		return id;
 	}
@@ -70,9 +80,19 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				ObjectInputStream dis = players.get(0).getInputStream();
 				ServerMain.log("[" + sessionName + "] Player '" + players.get(0).getName() +
 						"' can start the game.\n");
-				while (dis.readInt() != SERVER_RECEIVE_START_GAME) {
-					Thread.yield();
-				}
+				/*int avail = 0;
+				int command = 0;
+				while ((avail = dis.available()) <= 0 || (command = dis.readInt()) != SERVER_RECEIVE_START_GAME) {//dis.readInt() != SERVER_RECEIVE_START_GAME) {
+					System.out.println("available=" + avail + ", command=" + command);
+					command = 0;
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}*/
+				int command = dis.readInt();
+				System.out.println("command=" + command);
 				System.out.println("Yes! Let's start this session!");
 				for (ReversiPlayer p : players) {
 					ObjectOutputStream dos = p.getOutputStream();
