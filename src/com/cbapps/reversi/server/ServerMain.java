@@ -124,7 +124,7 @@ public class ServerMain extends Application {
 		}.start();*/
 		ScrollPane root = new ScrollPane(textArea);
 		BorderPane borderPane = new BorderPane(root);
-		borderPane.setBottom(new CellPane());
+		borderPane.setBottom(new CellPane(0, 0));
 		//new ReversiSession(10, 10);
 		primaryStage.setScene(new Scene(borderPane, 500, 500));
 		primaryStage.show();

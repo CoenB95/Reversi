@@ -25,7 +25,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private boolean setup = false;
 
 	public ReversiSession(String sessionName, int boardWidth, int boardHeight) {
-		this.board = new Board(boardWidth, boardHeight);
+		this.board = new Board(boardWidth, boardHeight, null);
 		this.sessionName = sessionName;
 		this.players = new ArrayList<>();
 	}

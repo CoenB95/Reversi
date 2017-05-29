@@ -18,17 +18,21 @@ public class CellPane extends Pane {
 
 	private Circle stone;
 	private Paint playerColor = Color.BLACK;
+	private int col;
+	private int row;
 
-	public CellPane() {
+	public CellPane(int row, int col) {
+		this.col = col;
+		this.row = row;
 		setPrefSize(200, 200);
 
 		stone = new Circle(10, 10, 10);
 		stone.centerXProperty().bind(stone.radiusProperty().add(10));
 		stone.centerYProperty().bind(stone.radiusProperty().add(10));
-		stone.setFill(playerColor);
+		stone.setFill(Color.TRANSPARENT);
 		stone.radiusProperty().bind(Bindings.min(widthProperty(), heightProperty()).divide(2).subtract(10));
 
-		setOnMouseClicked(event -> changePossession(Color.hsb(Math.random() * 360, 1.0, 1.0)));
+//		setOnMouseClicked(event -> changePossession(Color.hsb(Math.random() * 360, 1.0, 1.0)));
 		getChildren().addAll(stone);
 	}
 
@@ -42,5 +46,13 @@ public class CellPane extends Pane {
 		stone.fillProperty().bind(Bindings.when(stone.rotateProperty().greaterThan(90))
 				.then(playerColor).otherwise(oldColor));
 		transition.playFromStart();
+	}
+
+	public int getColumn() {
+		return col;
+	}
+
+	public int getRow() {
+		return row;
 	}
 }
