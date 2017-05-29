@@ -5,6 +5,7 @@ import com.cbapps.reversi.ReversiPlayer;
 import com.cbapps.reversi.SimplePlayer;
 import com.cbapps.reversi.board.Board;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -18,6 +19,7 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,9 +40,17 @@ public class ClientMain extends Application implements ReversiConstants {
 	Scene scene1;
 	Scene scene2;
 
+	private int playerIndex;
+
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		service = Executors.newCachedThreadPool();
+
+		player = new ReversiPlayer("Player 1", Color.WHITE, null);
+		player.setSessionId(1);
+		otherPlayers = new ArrayList<>();
+		otherPlayers.add(player);
+		otherPlayers.add(new SimplePlayer("Player 2", Color.WHITE).setSessionId(2));
 
 		//Layout 1
 		VBox layout1 = new VBox(40);
@@ -78,7 +88,13 @@ public class ClientMain extends Application implements ReversiConstants {
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 8; j++) {
 				CellPane c = new CellPane(i, j);
-				c.setOnMouseClicked(event -> board.a(c.getRow(), c.getColumn(), 0, 1, 1));
+				c.setOnMouseClicked(event -> {
+					board.a(c.getRow(), c.getColumn(), 0, 1,
+							otherPlayers.get(playerIndex).getSessionId());
+					playerIndex = (playerIndex + 1) % 2;
+					Platform.runLater(() -> lblStatus.setText("It's " + otherPlayers.get(playerIndex).getName() +
+							"'s turn!"));
+				});
 				gridpane.add(cell[i][j] = c, j, i);
 			}
 		}

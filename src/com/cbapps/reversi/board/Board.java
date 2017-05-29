@@ -107,40 +107,45 @@ public class Board {
     }
 
     public void a(int row, int column, int rowChange, int columnChange, int playerId) {
-        if (b(row + rowChange, column + columnChange, rowChange, columnChange, playerId)) {
+        int nrOfOtherStonesInBetween =
+				b(row + rowChange, column + columnChange, rowChange, columnChange, playerId);
+        if (nrOfOtherStonesInBetween > 0) {
             System.out.println("We are allowed to turn this stone [" + row + "," + column + "]");
             changeCell(row, column, playerId);
-        }
+        } else {
+			System.out.println("There were not enough other stones in between.");
+		}
     }
 
-    private boolean b(int row, int column, int rowChange, int columnChange, int playerId) {
+    private int b(int row, int column, int rowChange, int columnChange, int playerId) {
         System.out.println("b called for cell at [" + row + "," + column + "]");
         //Bounds check; return false on hit
         if (row < 0 || row >= board.length) {
             System.out.println("row out of bounds");
-            return false;
+            return -1;
         }
         if (column < 0 || column >= board[0].length) {
             System.out.println("column out of bounds");
-            return false;
+            return -1;
         }
         //else if is empty cell return false;
         if (board[row][column] == EMPTY_CELL) {
             System.out.println("cell empty");
-            return false;
+            return -1;
         }
         //else if cell == playerID; return true;
         if (board[row][column] == playerId) {
             System.out.println("found own type of stone. Allow turning of tiles.");
-            return true;
+            return 0;
         }
         //else if (a()) {turn stone; return true;};
-        if (b(row + rowChange, column + columnChange, rowChange, columnChange, playerId)) {
+        int next = b(row + rowChange, column + columnChange, rowChange, columnChange, playerId);
+        if (next >= 0) {
             System.out.println("We are allowed to turn this stone [" + row + "," + column + "]");
             changeCell(row, column, playerId);
-            return true;
+            return next + 1;
         }
-        return false;
+        return -1;
     }
 
 

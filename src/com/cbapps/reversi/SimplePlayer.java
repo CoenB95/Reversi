@@ -49,8 +49,9 @@ public class SimplePlayer implements Serializable {
 		this.name = name;
 	}
 
-	public void setSessionId(int sessionId) {
+	public SimplePlayer setSessionId(int sessionId) {
 		this.sessionId = sessionId;
+		return this;
 	}
 
 	@Override
