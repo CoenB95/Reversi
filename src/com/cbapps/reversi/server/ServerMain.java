@@ -97,7 +97,7 @@ public class ServerMain extends Application {
 							} else {
 								System.out.println("Session doesn't exist. Creating one with same name...");
 								chosenSession = new ReversiSession(chosenSessionName,
-										5, 5)
+										5, 5, service)
 										.setSessionNr(sessions.size());
 								System.out.println("Add player...");
 								sessionId = chosenSession.addPlayer(player);
@@ -113,8 +113,9 @@ public class ServerMain extends Application {
 							System.out.println("Send sessionID...");
 							oos.writeInt(sessionId);
 							oos.flush();
+							//chosenSession.notifyOtherPlayers(player);
 							System.out.println("SessionID send, start session if needed.");
-							chosenSession.startSession(service);
+							chosenSession.startSession();
 							//int u = ois.readInt();
 							//System.out.println("Server Thread! '" + u + "'");
 						}

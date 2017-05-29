@@ -10,6 +10,8 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Coen Boelhouwers
@@ -23,41 +25,55 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private int activePlayer = 0;
 	private List<ReversiPlayer> players;
 	private boolean setup = false;
+	private Lock lock;
 
-	public ReversiSession(String sessionName, int boardWidth, int boardHeight) {
+	public ReversiSession(String sessionName, int boardWidth, int boardHeight, ExecutorService service) {
 		this.board = new Board(boardWidth, boardHeight);
 		this.sessionName = sessionName;
 		this.players = new ArrayList<>();
+		lock = new ReentrantLock();
+		this.service = service;
 	}
 
 	public int addPlayer(ReversiPlayer player){
 		int id = players.size()+1;
-		synchronized (this) {
-			players.forEach(p -> {
-				try {
-					System.out.println("addPlayer - send player addition to " + p + "; getOutput");
-					ObjectOutputStream oos = p.getOutputStream();
-					oos.flush();
-					System.out.println("addPlayer - writeInt");
-					oos.writeInt(SERVER_SEND_PLAYER_ADDED);
-					System.out.println("addPlayer - flush");
-					oos.flush();
-					System.out.println("addplayer - writeObject");
-					oos.writeObject(player);
-					System.out.println("addPlayer - flush");
-					oos.flush();
-					System.out.println("addPlayer - send.");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			});
-		}
 		players.add(player);
 		return id;
 	}
 
 	public String getSessionName() {
 		return sessionName;
+	}
+
+	/**
+	 * @deprecated this method somehow doesn't want to work and blocks the application.
+	 * Avoid using this method until an other solution is found.
+	 * @param player the new player.
+	 */
+	@Deprecated
+	public void notifyOtherPlayers(ReversiPlayer player) {
+		lock.lock();
+		for (ReversiPlayer p : players) {
+			if (!p.equals(player)) {
+				try {
+					System.out.println("addPlayer - send player addition to " + p + "; getOutput");
+					ObjectOutputStream oos = p.getOutputStream();
+					//oos.flush();
+					System.out.println("addPlayer - writeInt");
+					oos.writeInt(SERVER_SEND_PLAYER_ADDED);
+					System.out.println("addPlayer - flush");
+					//oos.flush();
+					System.out.println("addplayer - writeObject");
+					oos.writeObject(player);
+					System.out.println("addPlayer - flush");
+					//oos.flush();
+					System.out.println("addPlayer - send.");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		lock.unlock();
 	}
 
 	public ReversiSession setSessionNr(int nr) {
@@ -70,7 +86,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		//service.submit(this);
 	}
 
-	public void startSession(ExecutorService service) {
+	public void startSession() {
 		if (setup) return;
 		setup = true;
 		if (players.isEmpty()) throw new IllegalStateException("Can't start session without any players");
