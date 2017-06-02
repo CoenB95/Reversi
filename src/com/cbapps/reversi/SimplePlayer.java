@@ -14,6 +14,7 @@ public class SimplePlayer implements Serializable {
 	private String name;
 	private transient Color color;
 	private int sessionId;
+	private transient int score;
 
 	public SimplePlayer(String name) {
 		this(name, Color.BLACK);
@@ -30,6 +31,10 @@ public class SimplePlayer implements Serializable {
 
 	public Paint getColor() {
 		return color;
+	}
+
+	public int getScore() {
+		return score;
 	}
 
 	public int getSessionId() {
@@ -57,6 +62,10 @@ public class SimplePlayer implements Serializable {
 	@Override
 	public String toString() {
 		return "Player{name=" + name + ", color=" + color + "}";
+	}
+
+	public void setScore(int score) {
+		this.score = score;
 	}
 
 	private void writeObject(ObjectOutputStream out) throws IOException {

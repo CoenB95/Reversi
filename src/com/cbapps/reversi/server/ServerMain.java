@@ -30,6 +30,8 @@ import static com.cbapps.reversi.ReversiConstants.SERVER_RECEIVE_START_GAME;
  */
 public class ServerMain extends Application {
 
+	private static String TAG = "Server";
+
 	private List<ReversiSession> sessions;
 	private int port = 8081;
 	private ServerSocketChannel server;
@@ -47,9 +49,9 @@ public class ServerMain extends Application {
 				server = ServerSocketChannel.open();
 				server.configureBlocking(false);
 				server.socket().bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
-				log("Server started.\n" +
+				log(TAG, "Server started.\n" +
 						"IP: " + InetAddress.getLocalHost().getHostAddress() + "\n" +
-						"Port: " + port + "\n");
+						"Port: " + port);
 
 				while (!service.isShutdown()) {
 					if (!server.isOpen()) {
@@ -65,14 +67,14 @@ public class ServerMain extends Application {
 							ObjectInputStream ois = player.getInputStream();
 							player.setName(ois.readUTF());
 
-							log("New player found (IP: " + channel.socket().getInetAddress().getHostAddress() +
-									", Player name: '" + player.getName() + "').\n");
+							log(TAG, "New player found (IP: " + channel.socket().getInetAddress().getHostAddress() +
+									", Player name: '" + player.getName() + "').");
 
 							//Send available sessions
 							ObjectOutputStream oos = player.getOutputStream();
 							List<String> sessionNames = new ArrayList<>();
 							sessions.forEach(s -> sessionNames.add(s.getSessionName()));
-							log("Available sessions for '" + player.getName() + "':\n" + sessionNames + "\n");
+							log(TAG, "Available sessions for '" + player.getName() + "': " + sessionNames);
 							oos.writeObject(sessionNames);
 							oos.flush();
 
@@ -80,7 +82,7 @@ public class ServerMain extends Application {
 							System.out.println("Waiting for session choice...");
 							String chosenSessionName = ois.readUTF();
 							System.out.println("Received session choice: '" + chosenSessionName + "'");
-							log("Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.\n");
+							log(TAG, "Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.");
 
 							//Match the sessionName with an actual session, create changeAllValidCells new one with the
 							//name if there is no match.
@@ -103,21 +105,18 @@ public class ServerMain extends Application {
 								sessionId = chosenSession.addPlayer(player);
 								System.out.println("Player added.");
 								sessions.add(chosenSession);
-								log("Started changeAllValidCells new session named '" + chosenSession.getSessionName() + "'\n");
+								log(TAG, "Started changeAllValidCells new session named '" + chosenSession.getSessionName() + "'");
 							}
 							System.out.println("Player sessionId=" + sessionId);
 							//Acknowledge by sending back the sessionID.
 							player.setSessionId(sessionId);
-							log("Added player '" + player + "' to session '" + chosenSession.getSessionName() +
-									"' (sessionID = " + sessionId + ")\n");
+							log(TAG, "Added player '" + player + "' to session '" + chosenSession.getSessionName() +
+									"' (sessionID = " + sessionId + ")");
 							System.out.println("Send sessionID...");
 							oos.writeInt(sessionId);
 							oos.flush();
-							//chosenSession.notifyOtherPlayers(player);
 							System.out.println("SessionID send, start session if needed.");
 							chosenSession.startSession();
-							//int u = ois.readInt();
-							//System.out.println("Server Thread! '" + u + "'");
 						}
 						Thread.sleep(100);
 					} catch (Exception e) {
@@ -131,24 +130,15 @@ public class ServerMain extends Application {
 			}
 
 		});
-		/*new AnimationTimer() {
-			@Override
-			public void handle(long now) {
-				if (lastNanos == 0) lastNanos = now;
-				frame((now - lastNanos) / 1_000_000_000.0);
-				lastNanos = now;
-			}
-		}.start();*/
 		ScrollPane root = new ScrollPane(textArea);
 		BorderPane borderPane = new BorderPane(root);
 		borderPane.setBottom(new CellPane(0, 0));
-		//new ReversiSession(10, 10);
 		primaryStage.setScene(new Scene(borderPane, 500, 500));
 		primaryStage.show();
 	}
 
-	public static void log(String text) {
-		Platform.runLater(() -> textArea.appendText(text));
+	public static void log(String tag, String text) {
+		Platform.runLater(() -> textArea.appendText(String.format("%-20s %s%n", "[" + tag + "]", text)));
 	}
 
 	@Override
@@ -156,10 +146,6 @@ public class ServerMain extends Application {
 		super.stop();
 		service.shutdown();
 	}
-
-	/*public void frame(double elapsedTime) {
-		System.out.println("Passed time: " + elapsedTime);
-	}*/
 
 	public static void main(String[] args) {
 		launch(ServerMain.class, args);

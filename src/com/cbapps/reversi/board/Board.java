@@ -61,7 +61,7 @@ public class Board {
 		changeCell(centerLeft + 1, centerTop + 1, 1);
 	}
 
-    public static void setupPlayerColors(List<SimplePlayer> players) {
+    public static void setupPlayerColors(List<? extends SimplePlayer> players) {
         if (players.size() == 2) {
             players.get(0).setColor(Color.BLACK);
             players.get(1).setColor(Color.WHITE);

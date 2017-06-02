@@ -89,7 +89,6 @@ public class ClientMain extends Application implements ReversiConstants {
 		boardGridPane = new BoardGridPane(board, cell -> {
 			if (board.changeAllValidCells(cell.getRow(), cell.getColumn(), player.getSessionId())) {
 				boardGridPane.setDisable(true);
-				Platform.runLater(() -> boardStatusLabel.setText("Waiting for other player moves..."));
 				service.submit(() -> {
 					try {
 						player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
@@ -134,7 +133,7 @@ public class ClientMain extends Application implements ReversiConstants {
 
 			String chosenSessionName;
 			if (availableSessions.isEmpty()) {
-				chosenSessionName = "Een of andere nieuwe sessie";
+				chosenSessionName = "Sessie1";
 			} else {
 				chosenSessionName = availableSessions.get(0);
 			}
@@ -166,13 +165,13 @@ public class ClientMain extends Application implements ReversiConstants {
 			System.out.println("Read start game signal");
 			int playerAmount = ois.readInt();
 			System.out.println("Total amount of player in this session: " + playerAmount);
-			for (int i = 0; i < playerAmount; i++) {
-				if (i != player.getSessionId())
-					otherPlayers.add(new SimplePlayer("Player " + (i + 1), Color.BLACK));
-			}
+//			for (int i = 0; i < playerAmount; i++) {
+//				if (i != player.getSessionId())
+//					otherPlayers.add(new SimplePlayer("Player " + (i + 1), Color.BLACK).setSessionId(i));
+//			}
 
 			//Setup the colors of the players (currently determined by id)
-			Board.setupPlayerColors(otherPlayers);
+			//Board.setupPlayerColors(otherPlayers);
 
 			//Go to board scene
 			Platform.runLater(this::goToBoardScene);
@@ -211,6 +210,9 @@ public class ClientMain extends Application implements ReversiConstants {
 				} else if (com == CLIENT_RECEIVE_YOU_WON) {
 					Platform.runLater(() -> boardStatusLabel.setText("You won! Congrats!"));
 					break;
+				} else if (com == CLIENT_RECEIVE_OTHER_START_MOVE) {
+					SimplePlayer p = getPlayerById(ois.readInt());
+					Platform.runLater(() -> boardStatusLabel.setText("Waiting for " + p.getName() + "'s move..."));
 				} else if (com == CLIENT_RECEIVE_OTHER_DID_MOVE) {
 					int playerId = ois.readInt();
 					int row = ois.readInt();
