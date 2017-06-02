@@ -1,8 +1,12 @@
 package com.cbapps.reversi.board;
 
 import com.cbapps.reversi.SimplePlayer;
+import com.cbapps.reversi.client.CellPane;
+import javafx.application.Platform;
+import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -12,21 +16,16 @@ public class Board {
     public static final int EMPTY_CELL = 0;
 
     private int[][] board;
-    private OnCellChangedListener listener;
+    private int boardWidth;
+    private int boardHeight;
+    private OnBoardActivityListener listener;
 
 
-    public Board(int columns, int rows, OnCellChangedListener l) {
-        this.listener = l;
+    public Board(int rows, int columns) {
         this.board = new int[rows][columns];
-        int centerLeft = Math.floorDiv(columns, 2);
-        int centerTop = Math.floorDiv(rows, 2);
-        //Setup start field
-        changeCell(centerLeft, centerTop, 1);
-        changeCell(centerLeft + 1, centerTop, 2);
-        changeCell(centerLeft, centerTop + 1, 2);
-        changeCell(centerLeft + 1, centerTop + 1, 1);
+        this.boardHeight = columns;
+        this.boardWidth = rows;
     }
-
 
     public boolean canPlace(int column, int row) {
         if (isCellEmpty(column, row)) {
@@ -48,9 +47,19 @@ public class Board {
         if (listener != null) listener.onCellChanged(row, column, playerId);
     }
 
-    public void setOnCellChangedListener(OnCellChangedListener l) {
+    public void setOnCellChangedListener(OnBoardActivityListener l) {
         listener = l;
     }
+
+    public void setupBoard() {
+		int centerLeft = Math.floorDiv(boardHeight, 2);
+		int centerTop = Math.floorDiv(boardWidth, 2);
+		//Setup start field
+		changeCell(centerLeft, centerTop, 1);
+		changeCell(centerLeft + 1, centerTop, 2);
+		changeCell(centerLeft, centerTop + 1, 2);
+		changeCell(centerLeft + 1, centerTop + 1, 1);
+	}
 
     public static void setupPlayerColors(List<SimplePlayer> players) {
         if (players.size() == 2) {
@@ -59,7 +68,15 @@ public class Board {
         }
     }
 
-    public int getScoreOfPlayer(int playerID) {
+	public int getBoardHeight() {
+		return boardHeight;
+	}
+
+	public int getBoardWidth() {
+		return boardWidth;
+	}
+
+	public int getScoreOfPlayer(int playerID) {
         int PlayerScore = 0;
         for (int i = 0; i < board.length; i++) {
             for (int j = 0; j < board[0].length; j++) {

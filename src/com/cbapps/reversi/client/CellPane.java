@@ -16,8 +16,10 @@ import javafx.util.Duration;
  */
 public class CellPane extends Pane {
 
+	private static int flipDelay;
+
 	private Circle stone;
-	private Paint playerColor = Color.BLACK;
+	private Paint playerColor = Color.TRANSPARENT;
 	private int col;
 	private int row;
 
@@ -29,7 +31,7 @@ public class CellPane extends Pane {
 		stone = new Circle(10, 10, 10);
 		stone.centerXProperty().bind(stone.radiusProperty().add(10));
 		stone.centerYProperty().bind(stone.radiusProperty().add(10));
-		stone.setFill(Color.TRANSPARENT);
+		stone.setFill(playerColor);
 		stone.radiusProperty().bind(Bindings.min(widthProperty(), heightProperty()).divide(2).subtract(10));
 
 //		setOnMouseClicked(event -> changePossession(Color.hsb(Math.random() * 360, 1.0, 1.0)));
@@ -45,7 +47,10 @@ public class CellPane extends Pane {
 		transition.setAxis(Rotate.X_AXIS);
 		stone.fillProperty().bind(Bindings.when(stone.rotateProperty().greaterThan(90))
 				.then(playerColor).otherwise(oldColor));
+		transition.setDelay(Duration.millis(flipDelay));
+		flipDelay += 200;
 		transition.playFromStart();
+		transition.setOnFinished(event -> flipDelay -= 200);
 	}
 
 	public int getColumn() {

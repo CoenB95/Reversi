@@ -4,6 +4,7 @@ import com.cbapps.reversi.ReversiConstants;
 import com.cbapps.reversi.ReversiPlayer;
 import com.cbapps.reversi.SimplePlayer;
 import com.cbapps.reversi.board.Board;
+import com.cbapps.reversi.board.BoardGridPane;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -34,17 +35,17 @@ public class ClientMain extends Application implements ReversiConstants {
 	private ReversiPlayer player;
 	private List<SimplePlayer> otherPlayers;
 	private Board board;
-	private CellPane[][] cell = new CellPane[8][8];
 	private ExecutorService service;
 
 	//Login Layout
-	private TextField username;
-	private Button startGameButton;
+	private Scene 		loginScene;
+	private TextField 	loginUsernameField;
+	private Button 		loginStartGameButton;
 
 	//Board Layout
-	private Scene boardScene;
-	private GridPane gridpane;
-	private Label lblStatus = new Label();
+	private Scene 		boardScene;
+	private GridPane	boardGridPane;
+	private Label 		boardStatusLabel;
 
 	private Stage primaryStage;
 
@@ -52,31 +53,27 @@ public class ClientMain extends Application implements ReversiConstants {
 	public void start(Stage primaryStage) throws Exception {
 		this.primaryStage = primaryStage;
 		service = Executors.newCachedThreadPool();
-		otherPlayers = new ArrayList<>();
 
 		player = new ReversiPlayer("Player 1", Color.WHITE, null);
 		player.setSessionId(1);
-		otherPlayers = new ArrayList<>();
-		otherPlayers.add(player);
-		otherPlayers.add(new SimplePlayer("Player 2", Color.WHITE).setSessionId(2));
 
-		//Layout 1
+		//Login Scene
 		VBox layout1 = new VBox(40);
 		Label welcomelabel = new Label("Welcome, Please insert name here.");
-		startGameButton = new Button("Start");
-		startGameButton.setDisable(true);
-		username = new TextField();
-		username.setOnAction(event -> {
-			username.setDisable(true);
+		loginStartGameButton = new Button("Start");
+		loginStartGameButton.setDisable(true);
+		loginUsernameField = new TextField();
+		loginUsernameField.setOnAction(event -> {
+			loginUsernameField.setDisable(true);
 			service.submit(() -> {
-				if (connectToServer(username.getText()))
+				if (connectToServer(loginUsernameField.getText()))
 					playGame();
 			});
 		});
 
-		layout1.getChildren().addAll(welcomelabel, username, startGameButton);
-		Scene loginScene = new Scene(layout1, 300, 300);
-		startGameButton.setOnAction(e -> service.submit(() -> {
+		layout1.getChildren().addAll(welcomelabel, loginUsernameField, loginStartGameButton);
+		loginScene = new Scene(layout1, 300, 300);
+		loginStartGameButton.setOnAction(e -> service.submit(() -> {
 			try {
 				System.out.println("Send start game");
 				ObjectOutputStream dos = player.getOutputStream();
@@ -87,16 +84,18 @@ public class ClientMain extends Application implements ReversiConstants {
 			}
 		}));
 
-		//Layout 2
-		gridpane = new GridPane();
+		//Board Scene
+		board = new Board(8, 8);
+		boardStatusLabel = new Label();
+		/*boardGridPane = new GridPane();
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 8; j++) {
 				CellPane c = new CellPane(i, j);
 				c.setOnMouseClicked(event -> {
 					if (board.changeAllValidCells(c.getRow(), c.getColumn(),
 							player.getSessionId())) {
-						gridpane.setDisable(true);
-						Platform.runLater(() -> lblStatus.setText("Waiting for other player moves..."));
+						boardGridPane.setDisable(true);
+						Platform.runLater(() -> boardStatusLabel.setText("Waiting for other player moves..."));
 						service.submit(() -> {
 							try {
 								player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
@@ -109,17 +108,30 @@ public class ClientMain extends Application implements ReversiConstants {
 						});
 					}
 				});
-				gridpane.add(cell[i][j] = c, j, i);
+				boardGridPane.add(cell[i][j] = c, j, i);
 			}
-		}
-		gridpane.setDisable(true);
-
-		board = new Board(8, 8, (row, column, playerId) ->
-				cell[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE));
+		}*/
+		boardGridPane = new BoardGridPane(board, cell -> {
+			if (board.changeAllValidCells(cell.getRow(), cell.getColumn(), player.getSessionId())) {
+				boardGridPane.setDisable(true);
+				Platform.runLater(() -> boardStatusLabel.setText("Waiting for other player moves..."));
+				service.submit(() -> {
+					try {
+						player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
+						player.getOutputStream().writeInt(cell.getRow());
+						player.getOutputStream().writeInt(cell.getColumn());
+						player.getOutputStream().flush();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
+			}
+		});
+		boardGridPane.setDisable(true);
 
 		BorderPane borderPane = new BorderPane();
-		borderPane.setCenter(gridpane);
-		borderPane.setBottom(lblStatus);
+		borderPane.setCenter(boardGridPane);
+		borderPane.setBottom(boardStatusLabel);
 		boardScene = new Scene(borderPane, 400, 400);
 
 		primaryStage.setScene(loginScene);
@@ -132,8 +144,10 @@ public class ClientMain extends Application implements ReversiConstants {
 			Socket socket = new Socket(InetAddress.getLocalHost(), 8081);
 
 			player = new ReversiPlayer(playerName, socket);
+			otherPlayers = new ArrayList<>();
 
 			//Introduce yourself
+			//Send player name
 			ObjectOutputStream dos = player.getOutputStream();
 			dos.writeUTF(playerName);
 			dos.flush();
@@ -158,7 +172,7 @@ public class ClientMain extends Application implements ReversiConstants {
 			System.out.println("Received sessionID: " + player.getSessionId());
 
 			//If we are the first player, we may start the game
-			if (player.getSessionId() == 1) startGameButton.setDisable(false);
+			if (player.getSessionId() == 1) loginStartGameButton.setDisable(false);
 
 			//Now, the server will send info about which other players will contest.
 			int command;
@@ -180,15 +194,25 @@ public class ClientMain extends Application implements ReversiConstants {
 				if (i != player.getSessionId())
 					otherPlayers.add(new SimplePlayer("Player " + (i + 1), Color.BLACK));
 			}
+
+			//Setup the colors of the players (currently determined by id)
 			Board.setupPlayerColors(otherPlayers);
 
-			//Go to board layout
-			Platform.runLater(() -> primaryStage.setScene(boardScene));
+			//Go to board scene
+			Platform.runLater(this::goToBoardScene);
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
 		}
+	}
+
+	private void goToBoardScene() {
+		primaryStage.setScene(boardScene);
+	}
+
+	private void goToLoginScene() {
+		primaryStage.setScene(loginScene);
 	}
 
 	/**
@@ -212,8 +236,8 @@ public class ClientMain extends Application implements ReversiConstants {
 					int column = ois.readInt();
 					board.changeAllValidCells(row, column, playerId);
 				} else if (com == CLIENT_RECEIVE_START_MOVE) {
-					gridpane.setDisable(false);
-					Platform.runLater(() -> lblStatus.setText("It's your turn"));
+					boardGridPane.setDisable(false);
+					Platform.runLater(() -> boardStatusLabel.setText("It's your turn"));
 				}
 			}
 		} catch (IOException e) {

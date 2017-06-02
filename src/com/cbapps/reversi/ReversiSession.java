@@ -28,7 +28,8 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private Lock lock;
 
 	public ReversiSession(String sessionName, int boardWidth, int boardHeight, ExecutorService service) {
-		this.board = new Board(boardWidth, boardHeight, null);
+		this.board = new Board(boardWidth, boardHeight);
+		this.board.setupBoard();
 		this.sessionName = sessionName;
 		this.players = new ArrayList<>();
 		lock = new ReentrantLock();
