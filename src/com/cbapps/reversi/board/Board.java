@@ -131,7 +131,7 @@ public class Board {
 
     public boolean changeAllValidCells(int row, int column, int playerId) {
         System.out.println("Move on [" + row + "," + column + "], checking cells...");
-        if (!isCellEmpty(column, row)) {
+        if (!isCellEmpty(row, column)) {
         	System.out.println("Cell is already possessed. Move not allowed.");
         	return false;
 		}

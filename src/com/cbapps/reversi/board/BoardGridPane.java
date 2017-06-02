@@ -1,14 +1,11 @@
 package com.cbapps.reversi.board;
 
 import com.cbapps.reversi.ReversiConstants;
-import com.cbapps.reversi.ReversiPlayer;
 import com.cbapps.reversi.client.CellPane;
-import javafx.application.Platform;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
-
-import java.io.IOException;
 
 /**
  * @author Coen Boelhouwers
@@ -34,6 +31,7 @@ public class BoardGridPane extends GridPane implements ReversiConstants {
 			cells[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE);
 		});
 		board.setupBoard();
+		setBackground(new Background(new BackgroundFill(Color.GREEN, null, null)));
 	}
 
 	public interface OnCellClickedListener {

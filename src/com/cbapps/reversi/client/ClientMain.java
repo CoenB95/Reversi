@@ -86,31 +86,6 @@ public class ClientMain extends Application implements ReversiConstants {
 
 		//Board Scene
 		board = new Board(8, 8);
-		boardStatusLabel = new Label();
-		/*boardGridPane = new GridPane();
-		for (int i = 0; i < 8; i++) {
-			for (int j = 0; j < 8; j++) {
-				CellPane c = new CellPane(i, j);
-				c.setOnMouseClicked(event -> {
-					if (board.changeAllValidCells(c.getRow(), c.getColumn(),
-							player.getSessionId())) {
-						boardGridPane.setDisable(true);
-						Platform.runLater(() -> boardStatusLabel.setText("Waiting for other player moves..."));
-						service.submit(() -> {
-							try {
-								player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
-								player.getOutputStream().writeInt(c.getRow());
-								player.getOutputStream().writeInt(c.getColumn());
-								player.getOutputStream().flush();
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						});
-					}
-				});
-				boardGridPane.add(cell[i][j] = c, j, i);
-			}
-		}*/
 		boardGridPane = new BoardGridPane(board, cell -> {
 			if (board.changeAllValidCells(cell.getRow(), cell.getColumn(), player.getSessionId())) {
 				boardGridPane.setDisable(true);
@@ -127,6 +102,7 @@ public class ClientMain extends Application implements ReversiConstants {
 				});
 			}
 		});
+		boardStatusLabel = new Label();
 		boardGridPane.setDisable(true);
 
 		BorderPane borderPane = new BorderPane();

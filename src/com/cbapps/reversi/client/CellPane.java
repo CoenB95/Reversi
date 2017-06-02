@@ -2,8 +2,7 @@ package com.cbapps.reversi.client;
 
 import javafx.animation.RotateTransition;
 import javafx.beans.binding.Bindings;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
@@ -28,14 +27,14 @@ public class CellPane extends Pane {
 		this.row = row;
 		setPrefSize(200, 200);
 
-		stone = new Circle(10, 10, 10);
-		stone.centerXProperty().bind(stone.radiusProperty().add(10));
-		stone.centerYProperty().bind(stone.radiusProperty().add(10));
+		stone = new Circle(2, 2, 10);
+		stone.centerXProperty().bind(stone.radiusProperty().add(2));
+		stone.centerYProperty().bind(stone.radiusProperty().add(2));
 		stone.setFill(playerColor);
-		stone.radiusProperty().bind(Bindings.min(widthProperty(), heightProperty()).divide(2).subtract(10));
+		stone.radiusProperty().bind(Bindings.min(widthProperty(), heightProperty()).divide(2).subtract(2));
 
-//		setOnMouseClicked(event -> changePossession(Color.hsb(Math.random() * 360, 1.0, 1.0)));
 		getChildren().addAll(stone);
+		setBorder(new Border(new BorderStroke(Color.DARKGREEN, BorderStrokeStyle.SOLID, null, null)));
 	}
 
 	public void changePossession(Paint color) {
