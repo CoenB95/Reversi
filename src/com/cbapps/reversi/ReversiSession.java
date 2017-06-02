@@ -97,17 +97,6 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				ObjectInputStream dis = players.get(0).getInputStream();
 				ServerMain.log("[" + sessionName + "] Player '" + players.get(0).getName() +
 						"' can start the game.\n");
-				/*int avail = 0;
-				int command = 0;
-				while ((avail = dis.available()) <= 0 || (command = dis.readInt()) != SERVER_RECEIVE_START_GAME) {//dis.readInt() != SERVER_RECEIVE_START_GAME) {
-					System.out.println("available=" + avail + ", command=" + command);
-					command = 0;
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}*/
 				int command = dis.readInt();
 				System.out.println("command=" + command);
 				System.out.println("Yes! Let's start this session!");
@@ -138,37 +127,54 @@ public class ReversiSession implements Runnable, ReversiConstants {
 
 	@Override
 	public void run() {
-		while (!service.isShutdown()) {
-			try {
-				while (!board.isBoardFull()) {
-					ReversiPlayer currentPlayer = players.get(activePlayer);
-					System.out.println("It's player " + currentPlayer + "'s turn.");
-					currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
-					currentPlayer.getOutputStream().flush();
-					checkState(currentPlayer, SERVER_RECEIVE_MOVE);
-					int row = currentPlayer.getInputStream().readInt();
-					int column = currentPlayer.getInputStream().readInt();
+		try {
+			while (!service.isShutdown() && !board.isBoardFull()) {
+				ReversiPlayer currentPlayer = players.get(activePlayer);
+				System.out.println("It's player " + currentPlayer + "'s turn.");
+				currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
+				currentPlayer.getOutputStream().flush();
+				checkState(currentPlayer, SERVER_RECEIVE_MOVE);
+				int row = currentPlayer.getInputStream().readInt();
+				int column = currentPlayer.getInputStream().readInt();
 
-					if (board.changeAllValidCells(row, column, currentPlayer.getSessionId())) {
-						System.out.println("Player did valid move.");
-						for (ReversiPlayer pl : players) {
-							if (!pl.equals(currentPlayer)) {
-								pl.getOutputStream().writeInt(SERVER_SEND_OTHER_DID_MOVE);
-								pl.getOutputStream().writeInt(currentPlayer.getSessionId());
-								pl.getOutputStream().writeInt(row);
-								pl.getOutputStream().writeInt(column);
-								pl.getOutputStream().flush();
-							}
+				if (board.changeAllValidCells(row, column, currentPlayer.getSessionId())) {
+					System.out.println("Player did valid move.");
+					for (ReversiPlayer pl : players) {
+						if (!pl.equals(currentPlayer)) {
+							pl.getOutputStream().writeInt(SERVER_SEND_OTHER_DID_MOVE);
+							pl.getOutputStream().writeInt(currentPlayer.getSessionId());
+							pl.getOutputStream().writeInt(row);
+							pl.getOutputStream().writeInt(column);
+							pl.getOutputStream().flush();
 						}
-						activePlayer = (activePlayer + 1) % players.size();
-					} else {
-						System.out.println("Wrong move from player " + currentPlayer);
 					}
+					activePlayer = (activePlayer + 1) % players.size();
+				} else {
+					System.out.println("Wrong move from player " + currentPlayer);
 				}
-				System.out.println("Board is full, game has ended.");
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
+			System.out.println("Board is full. Determining winner...");
+			int highestScore = 0;
+			ReversiPlayer winner = null;
+			for (ReversiPlayer p : players) {
+				int score = board.getScoreOfPlayer(p.getSessionId());
+				if (winner == null || score > highestScore) {
+					winner = p;
+					highestScore = score;
+				}
+			}
+			System.out.println(winner + " won!");
+			for (ReversiPlayer p : players) {
+				if (p.equals(winner)) {
+					p.getOutputStream().writeInt(SERVER_SEND_YOU_WON);
+				} else {
+					p.getOutputStream().writeInt(SERVER_SEND_OTHER_WON);
+					p.getOutputStream().writeInt(p.getSessionId());
+				}
+				p.getOutputStream().flush();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 

@@ -23,8 +23,8 @@ public class Board {
 
     public Board(int rows, int columns) {
         this.board = new int[rows][columns];
-        this.boardHeight = columns;
-        this.boardWidth = rows;
+        this.boardWidth = columns;
+        this.boardHeight = rows;
     }
 
     public boolean canPlace(int column, int row) {
@@ -52,8 +52,8 @@ public class Board {
     }
 
     public void setupBoard() {
-		int centerLeft = Math.floorDiv(boardHeight, 2);
-		int centerTop = Math.floorDiv(boardWidth, 2);
+		int centerLeft = Math.floorDiv(boardWidth, 2);
+		int centerTop = Math.floorDiv(boardHeight, 2);
 		//Setup start field
 		changeCell(centerLeft, centerTop, 1);
 		changeCell(centerLeft + 1, centerTop, 2);
@@ -89,45 +89,13 @@ public class Board {
     }
 
     public boolean isBoardFull() {
-    	for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board[0].length; j++) {
+    	for (int i = 0; i < boardWidth; i++) {
+			for (int j = 0; j < boardHeight; j++) {
 				if (board[i][j] == EMPTY_CELL) return false;
 			}
 		}
 		return true;
 	}
-
-    public boolean isOver() {
-        boolean gameOver = false;
-        int isOver = 0;
-        for (int i = 0; i < board.length; i++) {
-            for (int j = 0; j < board[0].length; j++) {
-                if (isCellEmpty(i, j) == false) {
-                    isOver++;
-                }
-            }
-        }
-        if (isOver == 64) {
-            gameOver = true;
-        }
-        return gameOver;
-    }
-
-    public int getWinner(){
-        int Winner=-1;
-        if(isOver()==true){
-            if(getScoreOfPlayer(0)>getScoreOfPlayer(1)){
-                Winner = 0;
-            }
-            else if(getScoreOfPlayer(0)<getScoreOfPlayer(1)){
-                Winner = 1;
-            }
-            else{
-                Winner = -1;
-            }
-        }
-        return Winner;
-    }
 
     public boolean changeAllValidCells(int row, int column, int playerId) {
         System.out.println("Move on [" + row + "," + column + "], checking cells...");

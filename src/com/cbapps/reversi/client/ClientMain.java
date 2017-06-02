@@ -183,6 +183,10 @@ public class ClientMain extends Application implements ReversiConstants {
 		}
 	}
 
+	private SimplePlayer getPlayerById(int playerId) {
+		return otherPlayers.stream().filter(p -> p.getSessionId() == playerId).findFirst().orElse(null);
+	}
+
 	private void goToBoardScene() {
 		primaryStage.setScene(boardScene);
 	}
@@ -201,10 +205,11 @@ public class ClientMain extends Application implements ReversiConstants {
 				int com = ois.readInt();
 				if (com == CLIENT_RECEIVE_OTHER_WON) {
 					int playerId = ois.readInt();
-					System.out.println("Other player won: Player " + playerId);
+					Platform.runLater(() -> boardStatusLabel.setText("Ahw... '" +
+							getPlayerById(playerId).getName() + "' won. Next time better."));
 					break;
 				} else if (com == CLIENT_RECEIVE_YOU_WON) {
-					System.out.println("Game ended.");
+					Platform.runLater(() -> boardStatusLabel.setText("You won! Congrats!"));
 					break;
 				} else if (com == CLIENT_RECEIVE_OTHER_DID_MOVE) {
 					int playerId = ois.readInt();
