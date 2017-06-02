@@ -25,7 +25,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * @author Coen Boelhouwers
+ * The client main layout.
+ *
+ * @author Coen Boelhouwers, Gijs van Fessem
  */
 public class ClientMain extends Application implements ReversiConstants {
 
@@ -45,8 +47,6 @@ public class ClientMain extends Application implements ReversiConstants {
 	private Label lblStatus = new Label();
 
 	private Stage primaryStage;
-
-	private int playerIndex;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
@@ -69,29 +69,23 @@ public class ClientMain extends Application implements ReversiConstants {
 		username.setOnAction(event -> {
 			username.setDisable(true);
 			service.submit(() -> {
-				connectToServer(username.getText());
-				playGame();
+				if (connectToServer(username.getText()))
+					playGame();
 			});
 		});
 
 		layout1.getChildren().addAll(welcomelabel, username, startGameButton);
 		Scene loginScene = new Scene(layout1, 300, 300);
-		startGameButton.setOnAction(e -> {
-			System.out.println("Button pressed");
-			service.submit(() -> {
-				try {
-					System.out.println("Send start game");
-					ObjectOutputStream dos = player.getOutputStream();
-					System.out.println("- writeInt");
-					dos.writeInt(CLIENT_SEND_START_GAME);
-					System.out.println("- flush");
-					dos.flush();
-					System.out.println("- done");
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-			});
-		});
+		startGameButton.setOnAction(e -> service.submit(() -> {
+			try {
+				System.out.println("Send start game");
+				ObjectOutputStream dos = player.getOutputStream();
+				dos.writeInt(CLIENT_SEND_START_GAME);
+				dos.flush();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		}));
 
 		//Layout 2
 		gridpane = new GridPane();
@@ -120,9 +114,8 @@ public class ClientMain extends Application implements ReversiConstants {
 		}
 		gridpane.setDisable(true);
 
-		board = new Board(8, 8, (row, column, playerId) -> {
-			cell[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE);
-		});
+		board = new Board(8, 8, (row, column, playerId) ->
+				cell[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE));
 
 		BorderPane borderPane = new BorderPane();
 		borderPane.setCenter(gridpane);
@@ -134,7 +127,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		primaryStage.show();
 	}
 
-	private void connectToServer(String playerName) {
+	private boolean connectToServer(String playerName) {
 		try {
 			Socket socket = new Socket(InetAddress.getLocalHost(), 8081);
 
@@ -156,7 +149,7 @@ public class ClientMain extends Application implements ReversiConstants {
 				chosenSessionName = availableSessions.get(0);
 			}
 
-			//Send session choice
+			//Send chosen session
 			dos.writeUTF(chosenSessionName);
 			dos.flush();
 
@@ -168,8 +161,7 @@ public class ClientMain extends Application implements ReversiConstants {
 			if (player.getSessionId() == 1) startGameButton.setDisable(false);
 
 			//Now, the server will send info about which other players will contest.
-			int avail;
-			int command = 0;// = ois.readInt();
+			int command;
 			while ((command = ois.readInt()) != CLIENT_RECEIVE_START_GAME) {
 				System.out.println("a Received '" + command + "'");
 				if (command == CLIENT_RECEIVE_PLAYER_ADDED) {
@@ -178,14 +170,9 @@ public class ClientMain extends Application implements ReversiConstants {
 					System.out.print("We'll be playing against " + otherPlayer);
 					otherPlayers.add(otherPlayer);
 				}
-				command = 0;
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				//command = ois.readInt();
 			}
+
+			//The start-game signal was send
 			System.out.println("Read start game signal");
 			int playerAmount = ois.readInt();
 			System.out.println("Total amount of player in this session: " + playerAmount);
@@ -195,10 +182,21 @@ public class ClientMain extends Application implements ReversiConstants {
 			}
 			Board.setupPlayerColors(otherPlayers);
 
-			//Go to board layout.
+			//Go to board layout
 			Platform.runLater(() -> primaryStage.setScene(boardScene));
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
 
-			//Actual game
+	/**
+	 * Gameplay logic. This method returns when the game has finished.
+	 */
+	private void playGame() {
+		try {
+			ObjectInputStream ois = player.getInputStream();
 			while (true) {
 				int com = ois.readInt();
 				if (com == CLIENT_RECEIVE_OTHER_WON) {
@@ -218,14 +216,10 @@ public class ClientMain extends Application implements ReversiConstants {
 					Platform.runLater(() -> lblStatus.setText("It's your turn"));
 				}
 			}
-			System.out.println("Game ended.");
-		} catch (Exception e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	private void playGame() {
-
+		System.out.println("Game ended.");
 	}
 
 	@Override
