@@ -21,6 +21,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private String sessionName;
 	private int sessionNr;
 	private int activePlayer = 0;
+	private int unableToMoveCount = 0;
 	private List<ReversiPlayer> players;
 	private boolean setup = false;
 
@@ -98,6 +99,15 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		});
 	}
 
+	private boolean checkValidMovesPossibleForPlayer(int playerId) {
+		for (int r = 0; r < board.getBoardHeight(); r++) {
+			for (int col = 0; col < board.getBoardWidth(); col++) {
+				if (board.checkValidStonePlacement(r, col, playerId)) return true;
+			}
+		}
+		return false;
+	}
+
 	private void checkState(ReversiPlayer player, int expected)
 			throws IOException, IllegalStateException {
 		int value = player.getInputStream().readInt();
@@ -114,37 +124,47 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	public void run() {
 		try {
 			ServerMain.log(sessionName, "Game started");
-			while (!service.isShutdown() && !board.isBoardFull()) {
+			while (!service.isShutdown() && !board.isBoardFull() && unableToMoveCount <= players.size()) {
 				ReversiPlayer currentPlayer = players.get(activePlayer);
 				ServerMain.log(sessionName, "It's " + currentPlayer.getName() + "'s turn.");
-				currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
-				currentPlayer.getOutputStream().flush();
-				for (ReversiPlayer p : players) {
-					if (!p.equals(currentPlayer)) {
-						p.getOutputStream().writeInt(SERVER_SEND_OTHER_START_MOVE);
-						p.getOutputStream().writeInt(currentPlayer.getSessionId());
-						p.getOutputStream().flush();
+				if (!checkValidMovesPossibleForPlayer(currentPlayer.getSessionId())) {
+					unableToMoveCount++;
+					if (unableToMoveCount > players.size()) {
+						ServerMain.log(sessionName, "None of the players can move. Game is at end.");
+					} else {
+						ServerMain.log(sessionName, currentPlayer.getName() + " can't make any valid move. Skip.");
+						activePlayer = (activePlayer + 1) % players.size();
 					}
-				}
-				checkState(currentPlayer, SERVER_RECEIVE_MOVE);
-				int row = currentPlayer.getInputStream().readInt();
-				int column = currentPlayer.getInputStream().readInt();
-
-				if (board.turnStones(row, column, currentPlayer.getSessionId())) {
-					ServerMain.log(sessionName, "Player did valid move.");
-					for (ReversiPlayer pl : players) {
-						if (!pl.equals(currentPlayer)) {
-							pl.getOutputStream().writeInt(SERVER_SEND_OTHER_DID_MOVE);
-							pl.getOutputStream().writeInt(currentPlayer.getSessionId());
-							pl.getOutputStream().writeInt(row);
-							pl.getOutputStream().writeInt(column);
-							pl.getOutputStream().flush();
+				} else {
+					currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
+					currentPlayer.getOutputStream().flush();
+					for (ReversiPlayer p : players) {
+						if (!p.equals(currentPlayer)) {
+							p.getOutputStream().writeInt(SERVER_SEND_OTHER_START_MOVE);
+							p.getOutputStream().writeInt(currentPlayer.getSessionId());
+							p.getOutputStream().flush();
 						}
 					}
-					activePlayer = (activePlayer + 1) % players.size();
-				} else {
-					ServerMain.log(sessionName, "Wrong move from player " + currentPlayer +
-							". That should NOT have happened!");
+					checkState(currentPlayer, SERVER_RECEIVE_MOVE);
+					int row = currentPlayer.getInputStream().readInt();
+					int column = currentPlayer.getInputStream().readInt();
+
+					if (board.turnStones(row, column, currentPlayer.getSessionId())) {
+						ServerMain.log(sessionName, "Player did valid move.");
+						for (ReversiPlayer pl : players) {
+							if (!pl.equals(currentPlayer)) {
+								pl.getOutputStream().writeInt(SERVER_SEND_OTHER_DID_MOVE);
+								pl.getOutputStream().writeInt(currentPlayer.getSessionId());
+								pl.getOutputStream().writeInt(row);
+								pl.getOutputStream().writeInt(column);
+								pl.getOutputStream().flush();
+							}
+						}
+						activePlayer = (activePlayer + 1) % players.size();
+					} else {
+						ServerMain.log(sessionName, "Wrong move from player " + currentPlayer +
+								". That should NOT have happened!");
+					}
 				}
 			}
 			ServerMain.log(sessionName, "Board is full. Determining winner...");
