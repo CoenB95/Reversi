@@ -34,7 +34,6 @@ public class BoardGridPane extends GridPane implements ReversiConstants {
 		board.setOnCellChangedListener((row, column, playerId) -> {
 			cells[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE);
 		});
-		board.setupBoard();
 		setBackground(new Background(new BackgroundFill(Color.GREEN, null, null)));
 	}
 

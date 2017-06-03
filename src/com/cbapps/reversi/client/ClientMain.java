@@ -165,13 +165,6 @@ public class ClientMain extends Application implements ReversiConstants {
 			System.out.println("Read start game signal");
 			int playerAmount = ois.readInt();
 			System.out.println("Total amount of player in this session: " + playerAmount);
-//			for (int i = 0; i < playerAmount; i++) {
-//				if (i != player.getSessionId())
-//					otherPlayers.add(new SimplePlayer("Player " + (i + 1), Color.BLACK).setSessionId(i));
-//			}
-
-			//Setup the colors of the players (currently determined by id)
-			//Board.setupPlayerColors(otherPlayers);
 
 			//Go to board scene
 			Platform.runLater(this::goToBoardScene);
@@ -198,6 +191,7 @@ public class ClientMain extends Application implements ReversiConstants {
 	 * Gameplay logic. This method returns when the game has finished.
 	 */
 	private void playGame() {
+		board.setupBoard();
 		try {
 			ObjectInputStream ois = player.getInputStream();
 			while (true) {

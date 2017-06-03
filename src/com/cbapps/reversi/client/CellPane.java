@@ -32,7 +32,7 @@ public class CellPane extends Pane {
 		stone.centerYProperty().bind(stone.radiusProperty().add(2));
 		stone.setFill(playerColor);
 		stone.radiusProperty().bind(Bindings.min(widthProperty(), heightProperty()).divide(2).subtract(2));
-		//setBorderColor(Color.DARKGREEN);
+		setBorderColor(Color.DARKGREEN);
 		getChildren().addAll(stone);
 
 	}
