@@ -21,6 +21,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,9 +44,9 @@ public class ClientMain extends Application implements ReversiConstants {
 	private Button 		loginStartGameButton;
 
 	//Board Layout
-	private Scene 		boardScene;
-	private GridPane	boardGridPane;
-	private Label 		boardStatusLabel;
+	private Scene 			boardScene;
+	private BoardGridPane	boardGridPane;
+	private Label 			boardStatusLabel;
 
 	private Stage primaryStage;
 
@@ -87,8 +88,9 @@ public class ClientMain extends Application implements ReversiConstants {
 		//Board Scene
 		board = new Board(8, 8);
 		boardGridPane = new BoardGridPane(board, cell -> {
-			if (board.changeAllValidCells(cell.getRow(), cell.getColumn(), player.getSessionId())) {
+			if (board.checkStoneTurns(cell.getRow(), cell.getColumn(), player.getSessionId(), true)) {
 				boardGridPane.setDisable(true);
+				boardGridPane.markAllCells(Color.DARKGREEN);
 				service.submit(() -> {
 					try {
 						player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
@@ -217,8 +219,12 @@ public class ClientMain extends Application implements ReversiConstants {
 					int playerId = ois.readInt();
 					int row = ois.readInt();
 					int column = ois.readInt();
-					board.changeAllValidCells(row, column, playerId);
+					board.checkStoneTurns(row, column, playerId, true);
 				} else if (com == CLIENT_RECEIVE_START_MOVE) {
+					List<CellPane> options = updatePlacementOptions(player.getSessionId());
+					Platform.runLater(() -> boardStatusLabel.setText("Marking options..."));
+					boardGridPane.markAllCells(Color.DARKGREEN);
+					boardGridPane.markCells(options, Color.LIGHTGREEN);
 					boardGridPane.setDisable(false);
 					Platform.runLater(() -> boardStatusLabel.setText("It's your turn"));
 				}
@@ -233,6 +239,17 @@ public class ClientMain extends Application implements ReversiConstants {
 	public void stop() throws Exception {
 		super.stop();
 		service.shutdown();
+	}
+
+	private List<CellPane> updatePlacementOptions(int playerId) {
+		List<CellPane> validPlacements = new ArrayList<>();
+		for (int row = 0; row < board.getBoardHeight(); row++) {
+			for (int column = 0; column < board.getBoardWidth(); column++) {
+				if (board.checkValidStonePlacement(row, column, playerId))
+					validPlacements.add(boardGridPane.getCell(row, column));
+			}
+		}
+		return validPlacements;
 	}
 
 	public static void main(String[] args) {

@@ -32,9 +32,9 @@ public class CellPane extends Pane {
 		stone.centerYProperty().bind(stone.radiusProperty().add(2));
 		stone.setFill(playerColor);
 		stone.radiusProperty().bind(Bindings.min(widthProperty(), heightProperty()).divide(2).subtract(2));
-
+		//setBorderColor(Color.DARKGREEN);
 		getChildren().addAll(stone);
-		setBorder(new Border(new BorderStroke(Color.DARKGREEN, BorderStrokeStyle.SOLID, null, null)));
+
 	}
 
 	public void changePossession(Paint color) {
@@ -50,6 +50,10 @@ public class CellPane extends Pane {
 		flipDelay += 200;
 		transition.playFromStart();
 		transition.setOnFinished(event -> flipDelay -= 200);
+	}
+
+	public void setBorderColor(Color color) {
+		setBorder(new Border(new BorderStroke(color, BorderStrokeStyle.SOLID, null, null)));
 	}
 
 	public int getColumn() {

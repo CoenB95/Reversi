@@ -3,7 +3,6 @@ package com.cbapps.reversi;
 import com.cbapps.reversi.board.Board;
 import com.cbapps.reversi.server.ServerMain;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -11,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Coen Boelhouwers
@@ -26,14 +23,12 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private int activePlayer = 0;
 	private List<ReversiPlayer> players;
 	private boolean setup = false;
-	private Lock lock;
 
 	public ReversiSession(String sessionName, int boardWidth, int boardHeight, ExecutorService service) {
 		this.board = new Board(boardWidth, boardHeight);
 		this.board.setupBoard();
 		this.sessionName = sessionName;
 		this.players = new ArrayList<>();
-		lock = new ReentrantLock();
 		this.service = service;
 	}
 
@@ -48,7 +43,6 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	}
 
 	private void notifyOtherPlayers(ReversiPlayer player) {
-		lock.lock();
 		for (ReversiPlayer p : players) {
 			if (!p.equals(player)) {
 				try {
@@ -61,7 +55,6 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				}
 			}
 		}
-		lock.unlock();
 	}
 
 	public ReversiSession setSessionNr(int nr) {
@@ -77,7 +70,6 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		if (setup) return;
 		setup = true;
 		if (players.isEmpty()) throw new IllegalStateException("Can't start session without any players");
-		this.service = service;
 		this.service.submit(() -> {
 			try {
 				ObjectInputStream dis = players.get(0).getInputStream();
@@ -138,7 +130,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				int row = currentPlayer.getInputStream().readInt();
 				int column = currentPlayer.getInputStream().readInt();
 
-				if (board.changeAllValidCells(row, column, currentPlayer.getSessionId())) {
+				if (board.checkStoneTurns(row, column, currentPlayer.getSessionId(), true)) {
 					ServerMain.log(sessionName, "Player did valid move.");
 					for (ReversiPlayer pl : players) {
 						if (!pl.equals(currentPlayer)) {

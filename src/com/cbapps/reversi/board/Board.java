@@ -1,12 +1,8 @@
 package com.cbapps.reversi.board;
 
 import com.cbapps.reversi.SimplePlayer;
-import com.cbapps.reversi.client.CellPane;
-import javafx.application.Platform;
-import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -97,31 +93,34 @@ public class Board {
 		return true;
 	}
 
-    public boolean changeAllValidCells(int row, int column, int playerId) {
+	public boolean checkValidStonePlacement(int row, int column, int playerId) {
+    	if (!isCellEmpty(row, column)) return false;
+		else if (checkLineairStoneTurns(row, column, Direction.NORTH, playerId, false) > 0) return true;
+		else if (checkLineairStoneTurns(row, column, Direction.NORTH_EAST, playerId, false) > 0) return true;
+		else if (checkLineairStoneTurns(row, column, Direction.EAST, playerId, false) > 0) return true;
+		else if (checkLineairStoneTurns(row, column, Direction.SOUTH_EAST, playerId, false) > 0) return true;
+		else if (checkLineairStoneTurns(row, column, Direction.SOUTH, playerId, false) > 0) return true;
+		else if (checkLineairStoneTurns(row, column, Direction.SOUTH_WEST, playerId, false) > 0) return true;
+		else if (checkLineairStoneTurns(row, column, Direction.WEST, playerId, false) > 0) return true;
+		else if (checkLineairStoneTurns(row, column, Direction.NORTH_WEST, playerId, false) > 0) return true;
+		return false;
+	}
+
+    public boolean checkStoneTurns(int row, int column, int playerId, boolean turnStones) {
         System.out.println("Move on [" + row + "," + column + "], checking cells...");
         if (!isCellEmpty(row, column)) {
         	System.out.println("Cell is already possessed. Move not allowed.");
         	return false;
 		}
         int otherCellCount = 0;
-        //Northwards
-        otherCellCount += changeNeighboorCells(row - 1, column, -1, 0, playerId);
-        //Eastwards
-        otherCellCount += changeNeighboorCells(row, column + 1, 0, 1, playerId);
-        //Southwards
-        otherCellCount += changeNeighboorCells(row + 1, column, 1, 0, playerId);
-        //Westwards
-        otherCellCount += changeNeighboorCells(row, column - 1, 0, -1, playerId);
-
-        //Diagonals
-        //NorthEastwards
-        otherCellCount += changeNeighboorCells(row - 1, column + 1, -1, 1, playerId);
-        //Eastwards
-        otherCellCount += changeNeighboorCells(row + 1, column + 1, 1, 1, playerId);
-        //Eastwards
-        otherCellCount += changeNeighboorCells(row + 1, column - 1, 1, -1, playerId);
-        //Eastwards
-        otherCellCount += changeNeighboorCells(row - 1, column - 1, -1, -1, playerId);
+        otherCellCount += checkLineairStoneTurns(row, column, Direction.NORTH, playerId, turnStones);
+		otherCellCount += checkLineairStoneTurns(row, column, Direction.NORTH_EAST, playerId, turnStones);
+		otherCellCount += checkLineairStoneTurns(row, column, Direction.EAST, playerId, turnStones);
+		otherCellCount += checkLineairStoneTurns(row, column, Direction.SOUTH_EAST, playerId, turnStones);
+		otherCellCount += checkLineairStoneTurns(row, column, Direction.SOUTH, playerId, turnStones);
+		otherCellCount += checkLineairStoneTurns(row, column, Direction.SOUTH_WEST, playerId, turnStones);
+		otherCellCount += checkLineairStoneTurns(row, column, Direction.WEST, playerId, turnStones);
+		otherCellCount += checkLineairStoneTurns(row, column, Direction.NORTH_WEST, playerId, turnStones);
 
         if (otherCellCount > 0) {
             System.out.println(otherCellCount + " stones have turned. Valid move. Turn start stone.");
@@ -134,12 +133,14 @@ public class Board {
     }
 
     //Bugfix method.
-	private int changeNeighboorCells(int row, int column, int rowChange, int columnChange, int playerId) {
-    	int change = changeNeighboorCell(row, column, rowChange, columnChange, playerId);
+	private int checkLineairStoneTurns(int row, int column, Direction direction, int playerId, boolean turnStones) {
+    	int change = turnStoneRecursive(row + direction.getRowChange(), column +
+						direction.getColumnChange(), direction.getRowChange(), direction.getColumnChange(),
+				playerId, turnStones);
     	return change >= 0 ? change : 0;
 	}
 
-    private int changeNeighboorCell(int row, int column, int rowChange, int columnChange, int playerId) {
+    private int turnStoneRecursive(int row, int column, int rowChange, int columnChange, int playerId, boolean turnStones) {
         //Bounds check; return false on hit
         if (row < 0 || row >= board.length) {
 			System.out.println("  Board edge hit.");
@@ -159,15 +160,42 @@ public class Board {
 			System.out.println("  Same stone type hit. Allow turning of stones.");
             return 0;
         }
-        int next = changeNeighboorCell(row + rowChange, column + columnChange, rowChange, columnChange, playerId);
+        int next = turnStoneRecursive(row + rowChange, column + columnChange, rowChange, columnChange,
+				playerId, turnStones);
         if (next >= 0) {
-            System.out.println("  Turning stone at [" + row + "," + column + "].");
-            changeCell(row, column, playerId);
+            if (turnStones) {
+				System.out.println("  Turning stone at [" + row + "," + column + "].");
+				changeCell(row, column, playerId);
+			}
             return next + 1;
         }
         return -1;
     }
 
+    private enum Direction {
+    	NORTH(-1, 0),
+		NORTH_EAST(-1, 1),
+		EAST(0, 1),
+		SOUTH_EAST(1, 1),
+    	SOUTH(1, 0),
+		SOUTH_WEST(1, -1),
+    	WEST(0, -1),
+		NORTH_WEST(-1, -1);
 
+    	private int rowChange;
+    	private int columnChange;
 
+		Direction(int rowChange, int columnChange) {
+			this.rowChange = rowChange;
+			this.columnChange = columnChange;
+		}
+
+		public int getColumnChange() {
+			return columnChange;
+		}
+
+		public int getRowChange() {
+			return rowChange;
+		}
+	}
 }
