@@ -37,7 +37,7 @@ public class Board {
 
 	/**
 	 * Checks if placing a stone of the given id on the passed coordinate would be a valid move.
-	 * This method is a simplified version of {@link #turnStones(int, int, int)} that doesn't turn
+	 * This method is a simplified version of {@link #turnStones(int, int, int, boolean)} that doesn't turn
 	 * the stones and returns immediately if either direction would work, making it more efficient.
 	 *
 	 * @param row the row coordinate of the placed stone.
@@ -122,10 +122,10 @@ public class Board {
 		int centerLeft = (int) Math.floor((boardWidth - 0.5) / 2);
 		int centerTop = (int) Math.floor((boardHeight - 0.5) / 2);
 		//Setup start field
-		changeCell(centerLeft, centerTop, 0 % playerAmount + 1);
-		changeCell(centerLeft + 1, centerTop, 1 % playerAmount + 1);
-		changeCell(centerLeft, centerTop + 1, 2 % playerAmount + 1);
-		changeCell(centerLeft + 1, centerTop + 1, 3 % playerAmount + 1);
+		changeCell(centerTop, centerLeft, 0 % playerAmount + 1);
+		changeCell(centerTop, centerLeft + 1, 1 % playerAmount + 1);
+		changeCell(centerTop + 1, centerLeft + 1, 2 % playerAmount + 1);
+		changeCell(centerTop + 1, centerLeft, 3 % playerAmount + 1);
 	}
 
 	/**
@@ -142,7 +142,7 @@ public class Board {
 			players.get(0).setColor(Color.RED);
 			players.get(1).setColor(Color.BLUE);
 			players.get(2).setColor(Color.YELLOW);
-			if (players.size() > 3) players.get(3).setColor(Color.FORESTGREEN);
+			if (players.size() > 3) players.get(3).setColor(Color.LIMEGREEN);
 		}
     }
 

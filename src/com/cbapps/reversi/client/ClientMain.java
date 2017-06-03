@@ -88,7 +88,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		boardGridPane = new BoardGridPane(board, cell -> {
 			if (board.turnStones(cell.getRow(), cell.getColumn(), player.getSessionId(), placeFree)) {
 				boardGridPane.setDisable(true);
-				boardGridPane.markAllCells(Color.DARKGREEN);
+				boardGridPane.markAllCells(boardGridPane.getAdvisedBorderColor());
 				service.submit(() -> {
 					try {
 						player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
@@ -219,7 +219,7 @@ public class ClientMain extends Application implements ReversiConstants {
 								" Place anywhere adjacent, there will be no points."));
 						placeFree = true;
 					} else {
-						boardGridPane.markCells(options, Color.LIGHTGREEN);
+						boardGridPane.markCells(options, Color.WHITE);
 						Platform.runLater(() -> boardStatusLabel.setText("It's your turn"));
 						placeFree = false;
 					}

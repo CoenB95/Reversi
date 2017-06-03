@@ -44,6 +44,19 @@ public class BoardGridPane extends GridPane implements ReversiConstants {
 
 	public void addPlayer(SimplePlayer player) {
 		otherPlayers.add(player);
+		//In case of multicolor use grey background.
+		if (otherPlayers.size() > 2) {
+			setBackground(new Background(new BackgroundFill(Color.GRAY, null, null)));
+			for (int i = 0; i < board.getBoardWidth(); i++) {
+				for (int j = 0; j < board.getBoardHeight(); j++) {
+					cells[i][j].setBorderColor(getAdvisedBorderColor());
+				}
+			}
+		}
+	}
+
+	public Color getAdvisedBorderColor() {
+		return otherPlayers.size() > 2 ? Color.DIMGRAY : Color.DARKGREEN;
 	}
 
 	public CellPane getCell(int row, int column) {
