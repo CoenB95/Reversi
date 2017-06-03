@@ -130,7 +130,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				int row = currentPlayer.getInputStream().readInt();
 				int column = currentPlayer.getInputStream().readInt();
 
-				if (board.checkStoneTurns(row, column, currentPlayer.getSessionId(), true)) {
+				if (board.turnStones(row, column, currentPlayer.getSessionId())) {
 					ServerMain.log(sessionName, "Player did valid move.");
 					for (ReversiPlayer pl : players) {
 						if (!pl.equals(currentPlayer)) {

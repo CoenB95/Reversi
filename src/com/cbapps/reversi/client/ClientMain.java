@@ -12,7 +12,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -21,7 +20,6 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -88,7 +86,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		//Board Scene
 		board = new Board(8, 8);
 		boardGridPane = new BoardGridPane(board, cell -> {
-			if (board.checkStoneTurns(cell.getRow(), cell.getColumn(), player.getSessionId(), true)) {
+			if (board.turnStones(cell.getRow(), cell.getColumn(), player.getSessionId())) {
 				boardGridPane.setDisable(true);
 				boardGridPane.markAllCells(Color.DARKGREEN);
 				service.submit(() -> {
@@ -219,7 +217,7 @@ public class ClientMain extends Application implements ReversiConstants {
 					int playerId = ois.readInt();
 					int row = ois.readInt();
 					int column = ois.readInt();
-					board.checkStoneTurns(row, column, playerId, true);
+					board.turnStones(row, column, playerId);
 				} else if (com == CLIENT_RECEIVE_START_MOVE) {
 					List<CellPane> options = updatePlacementOptions(player.getSessionId());
 					Platform.runLater(() -> boardStatusLabel.setText("Marking options..."));

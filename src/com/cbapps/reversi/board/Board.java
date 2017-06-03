@@ -23,46 +23,40 @@ public class Board {
         this.boardHeight = rows;
     }
 
-    public boolean canPlace(int column, int row) {
-        if (isCellEmpty(column, row)) {
-            return true;
-        } else return false;
-    }
-
-    /**
-     * @param column the column index.
-     * @param row    the row index.
-     * @return true if this cell is empty, false otherwise.
-     */
-    public boolean isCellEmpty(int row, int column) {
-        return board[row][column] == EMPTY_CELL;
-    }
-
-    public void changeCell(int row, int column, int playerId) {
-        board[row][column] = playerId;
-        if (listener != null) listener.onCellChanged(row, column, playerId);
-    }
-
-    public void setOnCellChangedListener(OnBoardActivityListener l) {
-        listener = l;
-    }
-
-    public void setupBoard() {
-		int centerLeft = Math.floorDiv(boardWidth, 2);
-		int centerTop = Math.floorDiv(boardHeight, 2);
-		//Setup start field
-		changeCell(centerLeft, centerTop, 1);
-		changeCell(centerLeft + 1, centerTop, 2);
-		changeCell(centerLeft, centerTop + 1, 2);
-		changeCell(centerLeft + 1, centerTop + 1, 1);
+	/**
+	 * Changes the possession of the cell at the specified coordinate and notifies listeners of this change.
+	 *
+	 * @param row the row index.
+	 * @param column the column index.
+	 * @param playerId the new cell owner's id.
+	 */
+	public void changeCell(int row, int column, int playerId) {
+		board[row][column] = playerId;
+		if (listener != null) listener.onCellChanged(row, column, playerId);
 	}
 
-    public static void setupPlayerColors(List<? extends SimplePlayer> players) {
-        if (players.size() == 2) {
-            players.get(0).setColor(Color.BLACK);
-            players.get(1).setColor(Color.WHITE);
-        }
-    }
+	/**
+	 * Checks if placing a stone of the given id on the passed coordinate would be a valid move.
+	 * This method is a simplified version of {@link #turnStones(int, int, int)} that doesn't turn
+	 * the stones and returns immediately if either direction would work, making it more efficient.
+	 *
+	 * @param row the row coordinate of the placed stone.
+	 * @param column the column coordinate of the placed stone.
+	 * @param playerId the player's id of the placed stone.
+	 * @return true if the move is valid, false otherwise.
+	 */
+	public boolean checkValidStonePlacement(int row, int column, int playerId) {
+		if (!isCellEmpty(row, column)) return false;
+		else if (turnStonesFix(row, column, Direction.NORTH, playerId, false) > 0) return true;
+		else if (turnStonesFix(row, column, Direction.NORTH_EAST, playerId, false) > 0) return true;
+		else if (turnStonesFix(row, column, Direction.EAST, playerId, false) > 0) return true;
+		else if (turnStonesFix(row, column, Direction.SOUTH_EAST, playerId, false) > 0) return true;
+		else if (turnStonesFix(row, column, Direction.SOUTH, playerId, false) > 0) return true;
+		else if (turnStonesFix(row, column, Direction.SOUTH_WEST, playerId, false) > 0) return true;
+		else if (turnStonesFix(row, column, Direction.WEST, playerId, false) > 0) return true;
+		else if (turnStonesFix(row, column, Direction.NORTH_WEST, playerId, false) > 0) return true;
+		return false;
+	}
 
 	public int getBoardHeight() {
 		return boardHeight;
@@ -73,19 +67,23 @@ public class Board {
 	}
 
 	public int getScoreOfPlayer(int playerID) {
-        int PlayerScore = 0;
-        for (int i = 0; i < board.length; i++) {
-            for (int j = 0; j < board[0].length; j++) {
-                if (board[i][j] == playerID) {
-                    PlayerScore++;
-                }
-            }
-        }
-        return PlayerScore;
-    }
+		int PlayerScore = 0;
+		for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board[0].length; j++) {
+				if (board[i][j] == playerID) {
+					PlayerScore++;
+				}
+			}
+		}
+		return PlayerScore;
+	}
 
-    public boolean isBoardFull() {
-    	for (int i = 0; i < boardWidth; i++) {
+	/**
+	 * Checks the board to see if there are no empty cells left.
+	 * @return true if the complete board is full, false otherwise.
+	 */
+	public boolean isBoardFull() {
+		for (int i = 0; i < boardWidth; i++) {
 			for (int j = 0; j < boardHeight; j++) {
 				if (board[i][j] == EMPTY_CELL) return false;
 			}
@@ -93,34 +91,74 @@ public class Board {
 		return true;
 	}
 
-	public boolean checkValidStonePlacement(int row, int column, int playerId) {
-    	if (!isCellEmpty(row, column)) return false;
-		else if (checkLineairStoneTurns(row, column, Direction.NORTH, playerId, false) > 0) return true;
-		else if (checkLineairStoneTurns(row, column, Direction.NORTH_EAST, playerId, false) > 0) return true;
-		else if (checkLineairStoneTurns(row, column, Direction.EAST, playerId, false) > 0) return true;
-		else if (checkLineairStoneTurns(row, column, Direction.SOUTH_EAST, playerId, false) > 0) return true;
-		else if (checkLineairStoneTurns(row, column, Direction.SOUTH, playerId, false) > 0) return true;
-		else if (checkLineairStoneTurns(row, column, Direction.SOUTH_WEST, playerId, false) > 0) return true;
-		else if (checkLineairStoneTurns(row, column, Direction.WEST, playerId, false) > 0) return true;
-		else if (checkLineairStoneTurns(row, column, Direction.NORTH_WEST, playerId, false) > 0) return true;
-		return false;
+    /**
+	 * Checks if the cell at the specified coordinate is empty.
+	 *
+     * @param column the column index.
+     * @param row    the row index.
+     * @return true if this cell is empty, false otherwise.
+	 * @throws IndexOutOfBoundsException if the index falls outside the board's size.
+     */
+    public boolean isCellEmpty(int row, int column) {
+        return board[row][column] == EMPTY_CELL;
+    }
+
+    public void setOnCellChangedListener(OnBoardActivityListener l) {
+        listener = l;
+    }
+
+	/**
+	 * Setups the board, effectively placing four start-stones.
+	 * Note that this method does NOT clear the board.
+	 */
+	public void setupBoard() {
+		int centerLeft = Math.floorDiv(boardWidth, 2);
+		int centerTop = Math.floorDiv(boardHeight, 2);
+		//Setup start field
+		changeCell(centerLeft, centerTop, 1);
+		changeCell(centerLeft + 1, centerTop, 2);
+		changeCell(centerLeft, centerTop + 1, 2);
+		changeCell(centerLeft + 1, centerTop + 1, 1);
 	}
 
-    public boolean checkStoneTurns(int row, int column, int playerId, boolean turnStones) {
+	/**
+	 * Sets the colors of the passed players based on the player amount, such as
+	 * black and white for 2 players or 4 distinct colors for 3-4 players.
+	 *
+	 * @param players the players that will compete each other and need coloring.
+	 */
+    public static void setupPlayerColors(List<? extends SimplePlayer> players) {
+        if (players.size() == 2) {
+            players.get(0).setColor(Color.BLACK);
+            players.get(1).setColor(Color.WHITE);
+        }
+    }
+
+	/**
+	 * Turns the stones in all directions that are valid moves (animating from end to start) and
+	 * places a stone on the base coordinate if more than zero stones got turned.
+	 * Otherwise, the move was invalid and therefore the stone will not be placed.
+	 *
+	 * @param row the row coordinate of the placed stone.
+	 * @param column the column coordinate of the placed stone.
+	 * @param playerId the player's id of the placed stone.
+	 * @return true if the move is valid and the stones have turned, false otherwise.
+	 */
+    public boolean turnStones(int row, int column, int playerId) {
         System.out.println("Move on [" + row + "," + column + "], checking cells...");
         if (!isCellEmpty(row, column)) {
         	System.out.println("Cell is already possessed. Move not allowed.");
         	return false;
 		}
         int otherCellCount = 0;
-        otherCellCount += checkLineairStoneTurns(row, column, Direction.NORTH, playerId, turnStones);
-		otherCellCount += checkLineairStoneTurns(row, column, Direction.NORTH_EAST, playerId, turnStones);
-		otherCellCount += checkLineairStoneTurns(row, column, Direction.EAST, playerId, turnStones);
-		otherCellCount += checkLineairStoneTurns(row, column, Direction.SOUTH_EAST, playerId, turnStones);
-		otherCellCount += checkLineairStoneTurns(row, column, Direction.SOUTH, playerId, turnStones);
-		otherCellCount += checkLineairStoneTurns(row, column, Direction.SOUTH_WEST, playerId, turnStones);
-		otherCellCount += checkLineairStoneTurns(row, column, Direction.WEST, playerId, turnStones);
-		otherCellCount += checkLineairStoneTurns(row, column, Direction.NORTH_WEST, playerId, turnStones);
+        otherCellCount += turnStonesFix(row, column, Direction.NORTH, playerId, true);
+		otherCellCount += turnStonesFix(row, column, Direction.NORTH_EAST, playerId, true);
+		otherCellCount += turnStonesFix(row, column, Direction.EAST, playerId, true);
+		otherCellCount += turnStonesFix(row, column, Direction.SOUTH_EAST, playerId, true);
+		otherCellCount += turnStonesFix(row, column, Direction.SOUTH, playerId, true);
+		otherCellCount += turnStonesFix(row, column, Direction.SOUTH_WEST, playerId, true);
+		otherCellCount += turnStonesFix(row, column, Direction.WEST, playerId, true);
+		otherCellCount += turnStonesFix(row, column, Direction.NORTH_WEST, playerId, true);
 
         if (otherCellCount > 0) {
             System.out.println(otherCellCount + " stones have turned. Valid move. Turn start stone.");
@@ -132,8 +170,8 @@ public class Board {
 		}
     }
 
-    //Bugfix method.
-	private int checkLineairStoneTurns(int row, int column, Direction direction, int playerId, boolean turnStones) {
+    //Extra method handling -1 to 0, so turnStones() can count the result.
+	private int turnStonesFix(int row, int column, Direction direction, int playerId, boolean turnStones) {
     	int change = turnStoneRecursive(row + direction.getRowChange(), column +
 						direction.getColumnChange(), direction.getRowChange(), direction.getColumnChange(),
 				playerId, turnStones);
@@ -141,28 +179,27 @@ public class Board {
 	}
 
     private int turnStoneRecursive(int row, int column, int rowChange, int columnChange, int playerId, boolean turnStones) {
-        //Bounds check; return false on hit
+        //If we hit the board's bounds, this move is invalid.
         if (row < 0 || row >= board.length) {
-			System.out.println("  Board edge hit.");
             return -1;
         }
         if (column < 0 || column >= board[0].length) {
-			System.out.println("  Board edge hit.");
             return -1;
         }
-        //else if is empty cell return false;
+        //If we encounter a empty cell, this move is invalid.
         if (board[row][column] == EMPTY_CELL) {
-			System.out.println("  Empty cell hit.");
             return -1;
         }
-        //else if cell == playerID; return true;
+        //If we encounter a stone of our own, the move is valid and the stones in between may be turned (if any).
         if (board[row][column] == playerId) {
-			System.out.println("  Same stone type hit. Allow turning of stones.");
             return 0;
         }
+        //The decision if this cell may be turned is not made and therefore depends on the next cell.
+        //If cells ahead are allowed to turn, than this one may too.
         int next = turnStoneRecursive(row + rowChange, column + columnChange, rowChange, columnChange,
 				playerId, turnStones);
         if (next >= 0) {
+        	//Turning of stones is allowed.
             if (turnStones) {
 				System.out.println("  Turning stone at [" + row + "," + column + "].");
 				changeCell(row, column, playerId);

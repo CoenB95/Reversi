@@ -84,7 +84,7 @@ public class ServerMain extends Application {
 							System.out.println("Received session choice: '" + chosenSessionName + "'");
 							log(TAG, "Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.");
 
-							//Match the sessionName with an actual session, create checkStoneTurns new one with the
+							//Match the sessionName with an actual session, create turnStones new one with the
 							//name if there is no match.
 							ReversiSession chosenSession = sessions.stream()
 									.filter(s -> s.getSessionName().equals(chosenSessionName))
@@ -105,7 +105,7 @@ public class ServerMain extends Application {
 								sessionId = chosenSession.addPlayer(player);
 								System.out.println("Player added.");
 								sessions.add(chosenSession);
-								log(TAG, "Started checkStoneTurns new session named '" + chosenSession.getSessionName() + "'");
+								log(TAG, "Started turnStones new session named '" + chosenSession.getSessionName() + "'");
 							}
 							System.out.println("Player sessionId=" + sessionId);
 							//Acknowledge by sending back the sessionID.
