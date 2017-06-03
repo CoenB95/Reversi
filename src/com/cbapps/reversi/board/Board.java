@@ -112,8 +112,8 @@ public class Board {
 	 * Note that this method does NOT clear the board.
 	 */
 	public void setupBoard() {
-		int centerLeft = Math.floorDiv(boardWidth, 2);
-		int centerTop = Math.floorDiv(boardHeight, 2);
+		int centerLeft = (int) Math.floor((boardWidth - 0.5) / 2);
+		int centerTop = (int) Math.floor((boardHeight - 0.5) / 2);
 		//Setup start field
 		changeCell(centerLeft, centerTop, 1);
 		changeCell(centerLeft + 1, centerTop, 2);
