@@ -34,6 +34,7 @@ public class ClientMain extends Application implements ReversiConstants {
 	private ReversiPlayer player;
 	private Board board;
 	private ExecutorService service;
+	private boolean placeFree;
 
 	//Login Layout
 	private Scene 		loginScene;
@@ -85,7 +86,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		//Board Scene
 		board = new Board(8, 8);
 		boardGridPane = new BoardGridPane(board, cell -> {
-			if (board.turnStones(cell.getRow(), cell.getColumn(), player.getSessionId())) {
+			if (board.turnStones(cell.getRow(), cell.getColumn(), player.getSessionId(), placeFree)) {
 				boardGridPane.setDisable(true);
 				boardGridPane.markAllCells(Color.DARKGREEN);
 				service.submit(() -> {
@@ -93,6 +94,7 @@ public class ClientMain extends Application implements ReversiConstants {
 						player.getOutputStream().writeInt(CLIENT_SEND_MOVE);
 						player.getOutputStream().writeInt(cell.getRow());
 						player.getOutputStream().writeInt(cell.getColumn());
+						player.getOutputStream().writeBoolean(placeFree);
 						player.getOutputStream().flush();
 					} catch (IOException e) {
 						e.printStackTrace();
@@ -205,14 +207,23 @@ public class ClientMain extends Application implements ReversiConstants {
 					int playerId = ois.readInt();
 					int row = ois.readInt();
 					int column = ois.readInt();
-					board.turnStones(row, column, playerId);
+					boolean free = ois.readBoolean();
+					board.turnStones(row, column, playerId, free);
 				} else if (com == CLIENT_RECEIVE_START_MOVE) {
-					List<CellPane> options = updatePlacementOptions(player.getSessionId());
 					Platform.runLater(() -> boardStatusLabel.setText("Marking options..."));
-					boardGridPane.markAllCells(Color.DARKGREEN);
-					boardGridPane.markCells(options, Color.LIGHTGREEN);
+					List<CellPane> options = updatePlacementOptions(player.getSessionId(), false);
+					if (options.isEmpty()) {
+						options = updatePlacementOptions(player.getSessionId(), true);
+						boardGridPane.markCells(options, Color.ORANGE);
+						Platform.runLater(() -> boardStatusLabel.setText("Ai! Your whipped of the board." +
+								" Place anywhere adjacent, there will be no points."));
+						placeFree = true;
+					} else {
+						boardGridPane.markCells(options, Color.LIGHTGREEN);
+						Platform.runLater(() -> boardStatusLabel.setText("It's your turn"));
+						placeFree = false;
+					}
 					boardGridPane.setDisable(false);
-					Platform.runLater(() -> boardStatusLabel.setText("It's your turn"));
 				}
 			}
 		} catch (IOException e) {
@@ -227,11 +238,11 @@ public class ClientMain extends Application implements ReversiConstants {
 		service.shutdown();
 	}
 
-	private List<CellPane> updatePlacementOptions(int playerId) {
+	private List<CellPane> updatePlacementOptions(int playerId, boolean freeMove) {
 		List<CellPane> validPlacements = new ArrayList<>();
 		for (int row = 0; row < board.getBoardHeight(); row++) {
 			for (int column = 0; column < board.getBoardWidth(); column++) {
-				if (board.checkValidStonePlacement(row, column, playerId))
+				if (board.checkValidStonePlacement(row, column, playerId, freeMove))
 					validPlacements.add(boardGridPane.getCell(row, column));
 			}
 		}

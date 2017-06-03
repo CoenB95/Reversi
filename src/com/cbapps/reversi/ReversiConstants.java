@@ -16,7 +16,7 @@ public interface ReversiConstants {
 	/**Usage: [START_MOVE]*/
 	int SERVER_SEND_START_MOVE = 3000;
 
-	/**Usage: [MOVE][int row][int column]*/
+	/**Usage: [MOVE][int row][int column][boolean freeMove]*/
 	int SERVER_RECEIVE_MOVE = 3001;
 
 	/**Usage: [YOU_WON]*/
@@ -28,7 +28,7 @@ public interface ReversiConstants {
 	/**Usage: [START_MOVE][int playerId]*/
 	int SERVER_SEND_OTHER_START_MOVE = 5000;
 
-	/**Usage: [OTHER_DID_MOVE][int playerId][int row][int column]*/
+	/**Usage: [OTHER_DID_MOVE][int playerId][int row][int column][boolean freeMove]*/
 	int SERVER_SEND_OTHER_DID_MOVE = 6000;
 
 	/**Usage: [ERROR][utfString message]*/

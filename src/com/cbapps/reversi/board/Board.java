@@ -45,8 +45,13 @@ public class Board {
 	 * @param playerId the player's id of the placed stone.
 	 * @return true if the move is valid, false otherwise.
 	 */
-	public boolean checkValidStonePlacement(int row, int column, int playerId) {
+	public boolean checkValidStonePlacement(int row, int column, int playerId, boolean freeMove) {
 		if (!isCellEmpty(row, column)) return false;
+		else if (freeMove)
+			return !isCellEmpty(row - 1, column) || !isCellEmpty(row - 1, column + 1) ||
+					!isCellEmpty(row, column + 1) || !isCellEmpty(row + 1, column + 1) ||
+					!isCellEmpty(row + 1, column) || !isCellEmpty(row + 1, column - 1) ||
+					!isCellEmpty(row , column - 1) || !isCellEmpty(row - 1, column - 1);
 		else if (turnStonesFix(row, column, Direction.NORTH, playerId, false) > 0) return true;
 		else if (turnStonesFix(row, column, Direction.NORTH_EAST, playerId, false) > 0) return true;
 		else if (turnStonesFix(row, column, Direction.EAST, playerId, false) > 0) return true;
@@ -100,6 +105,8 @@ public class Board {
 	 * @throws IndexOutOfBoundsException if the index falls outside the board's size.
      */
     public boolean isCellEmpty(int row, int column) {
+    	if (row < 0 || row >= boardHeight) return true;
+		if (column < 0 || column >= boardWidth) return true;
         return board[row][column] == EMPTY_CELL;
     }
 
@@ -149,23 +156,24 @@ public class Board {
 	 * @param playerId the player's id of the placed stone.
 	 * @return true if the move is valid and the stones have turned, false otherwise.
 	 */
-    public boolean turnStones(int row, int column, int playerId) {
+    public boolean turnStones(int row, int column, int playerId, boolean freeMove) {
         System.out.println("Move on [" + row + "," + column + "], checking cells...");
         if (!isCellEmpty(row, column)) {
         	System.out.println("Cell is already possessed. Move not allowed.");
         	return false;
 		}
         int otherCellCount = 0;
-        otherCellCount += turnStonesFix(row, column, Direction.NORTH, playerId, true);
-		otherCellCount += turnStonesFix(row, column, Direction.NORTH_EAST, playerId, true);
-		otherCellCount += turnStonesFix(row, column, Direction.EAST, playerId, true);
-		otherCellCount += turnStonesFix(row, column, Direction.SOUTH_EAST, playerId, true);
-		otherCellCount += turnStonesFix(row, column, Direction.SOUTH, playerId, true);
-		otherCellCount += turnStonesFix(row, column, Direction.SOUTH_WEST, playerId, true);
-		otherCellCount += turnStonesFix(row, column, Direction.WEST, playerId, true);
-		otherCellCount += turnStonesFix(row, column, Direction.NORTH_WEST, playerId, true);
-
-        if (otherCellCount > 0) {
+        if (!freeMove) {
+			otherCellCount += turnStonesFix(row, column, Direction.NORTH, playerId, true);
+			otherCellCount += turnStonesFix(row, column, Direction.NORTH_EAST, playerId, true);
+			otherCellCount += turnStonesFix(row, column, Direction.EAST, playerId, true);
+			otherCellCount += turnStonesFix(row, column, Direction.SOUTH_EAST, playerId, true);
+			otherCellCount += turnStonesFix(row, column, Direction.SOUTH, playerId, true);
+			otherCellCount += turnStonesFix(row, column, Direction.SOUTH_WEST, playerId, true);
+			otherCellCount += turnStonesFix(row, column, Direction.WEST, playerId, true);
+			otherCellCount += turnStonesFix(row, column, Direction.NORTH_WEST, playerId, true);
+		}
+        if (freeMove || otherCellCount > 0) {
             System.out.println(otherCellCount + " stones have turned. Valid move. Turn start stone.");
             changeCell(row, column, playerId);
             return true;

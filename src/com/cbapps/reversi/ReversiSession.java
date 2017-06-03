@@ -22,6 +22,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private int sessionNr;
 	private int activePlayer = 0;
 	private int unableToMoveCount = 0;
+	private boolean freeMoveAllowed = true;
 	private List<ReversiPlayer> players;
 	private boolean setup = false;
 
@@ -98,10 +99,10 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		});
 	}
 
-	private boolean checkValidMovesPossibleForPlayer(int playerId) {
+	private boolean checkValidMovesPossibleForPlayer(int playerId, boolean freeMove) {
 		for (int r = 0; r < board.getBoardHeight(); r++) {
 			for (int col = 0; col < board.getBoardWidth(); col++) {
-				if (board.checkValidStonePlacement(r, col, playerId)) return true;
+				if (board.checkValidStonePlacement(r, col, playerId, freeMove)) return true;
 			}
 		}
 		return false;
@@ -123,47 +124,57 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	public void run() {
 		try {
 			ServerMain.log(sessionName, "Game started");
+			freeMoveAllowed = players.size() >= 3;
+			ServerMain.log(sessionName, "Free move allowed in case you'r stuck: " + freeMoveAllowed);
 			while (!service.isShutdown() && !board.isBoardFull() && unableToMoveCount <= players.size()) {
 				ReversiPlayer currentPlayer = players.get(activePlayer);
 				ServerMain.log(sessionName, "It's " + currentPlayer.getName() + "'s turn.");
-				if (!checkValidMovesPossibleForPlayer(currentPlayer.getSessionId())) {
-					unableToMoveCount++;
-					if (unableToMoveCount > players.size()) {
-						ServerMain.log(sessionName, "None of the players can move. Game is at end.");
-					} else {
-						ServerMain.log(sessionName, currentPlayer.getName() + " can't make any valid move. Skip.");
-						activePlayer = (activePlayer + 1) % players.size();
-					}
-				} else {
-					currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
-					currentPlayer.getOutputStream().flush();
-					for (ReversiPlayer p : players) {
-						if (!p.equals(currentPlayer)) {
-							p.getOutputStream().writeInt(SERVER_SEND_OTHER_START_MOVE);
-							p.getOutputStream().writeInt(currentPlayer.getSessionId());
-							p.getOutputStream().flush();
+				if (!checkValidMovesPossibleForPlayer(currentPlayer.getSessionId(), false)) {
+					if (!freeMoveAllowed || !checkValidMovesPossibleForPlayer(currentPlayer.getSessionId(),
+						true)) {
+						unableToMoveCount++;
+						if (unableToMoveCount > players.size()) {
+							ServerMain.log(sessionName, "None of the players can move. Game is at end.");
+						} else {
+							ServerMain.log(sessionName, currentPlayer.getName() +
+									" can't make any valid move. Skip.");
+							activePlayer = (activePlayer + 1) % players.size();
 						}
+						continue;
 					}
-					checkState(currentPlayer, SERVER_RECEIVE_MOVE);
-					int row = currentPlayer.getInputStream().readInt();
-					int column = currentPlayer.getInputStream().readInt();
+					ServerMain.log(sessionName, currentPlayer.getName() + " can't make any valid move. " +
+							"A free move is allowed to get back in the game.");
+				}
+				currentPlayer.getOutputStream().writeInt(SERVER_SEND_START_MOVE);
+				currentPlayer.getOutputStream().flush();
+				for (ReversiPlayer p : players) {
+					if (!p.equals(currentPlayer)) {
+						p.getOutputStream().writeInt(SERVER_SEND_OTHER_START_MOVE);
+						p.getOutputStream().writeInt(currentPlayer.getSessionId());
+						p.getOutputStream().flush();
+					}
+				}
+				checkState(currentPlayer, SERVER_RECEIVE_MOVE);
+				int row = currentPlayer.getInputStream().readInt();
+				int column = currentPlayer.getInputStream().readInt();
+				boolean free = currentPlayer.getInputStream().readBoolean();
 
-					if (board.turnStones(row, column, currentPlayer.getSessionId())) {
-						ServerMain.log(sessionName, "Player did valid move.");
-						for (ReversiPlayer pl : players) {
-							if (!pl.equals(currentPlayer)) {
-								pl.getOutputStream().writeInt(SERVER_SEND_OTHER_DID_MOVE);
-								pl.getOutputStream().writeInt(currentPlayer.getSessionId());
-								pl.getOutputStream().writeInt(row);
-								pl.getOutputStream().writeInt(column);
-								pl.getOutputStream().flush();
-							}
+				if (board.turnStones(row, column, currentPlayer.getSessionId(), free)) {
+					ServerMain.log(sessionName, "Player did valid move.");
+					for (ReversiPlayer pl : players) {
+						if (!pl.equals(currentPlayer)) {
+							pl.getOutputStream().writeInt(SERVER_SEND_OTHER_DID_MOVE);
+							pl.getOutputStream().writeInt(currentPlayer.getSessionId());
+							pl.getOutputStream().writeInt(row);
+							pl.getOutputStream().writeInt(column);
+							pl.getOutputStream().writeBoolean(free);
+							pl.getOutputStream().flush();
 						}
-						activePlayer = (activePlayer + 1) % players.size();
-					} else {
-						ServerMain.log(sessionName, "Wrong move from player " + currentPlayer +
-								". That should NOT have happened!");
 					}
+					activePlayer = (activePlayer + 1) % players.size();
+				} else {
+					ServerMain.log(sessionName, "Wrong move from player " + currentPlayer +
+							". That should NOT have happened!");
 				}
 			}
 			ServerMain.log(sessionName, "Board is full. Determining winner...");
