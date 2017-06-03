@@ -1,13 +1,16 @@
 package com.cbapps.reversi.board;
 
 import com.cbapps.reversi.ReversiConstants;
+import com.cbapps.reversi.SimplePlayer;
 import com.cbapps.reversi.client.CellPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Coen Boelhouwers
@@ -15,11 +18,13 @@ import java.util.Collection;
 public class BoardGridPane extends GridPane implements ReversiConstants {
 
 	private Board board;
+	private List<SimplePlayer> otherPlayers;
 	private CellPane[][] cells;
 
 	public BoardGridPane(Board board, OnCellClickedListener listener) {
 		super();
 		this.board = board;
+		this.otherPlayers = new ArrayList<>();
 		cells = new CellPane[board.getBoardWidth()][board.getBoardHeight()];
 		for (int i = 0; i < board.getBoardWidth(); i++) {
 			for (int j = 0; j < board.getBoardHeight(); j++) {
@@ -32,13 +37,25 @@ public class BoardGridPane extends GridPane implements ReversiConstants {
 			}
 		}
 		board.setOnCellChangedListener((row, column, playerId) -> {
-			cells[row][column].changePossession(playerId == 1 ? Color.BLACK : Color.WHITE);
+			cells[row][column].changePossession(getPlayerById(playerId).getColor());
 		});
 		setBackground(new Background(new BackgroundFill(Color.GREEN, null, null)));
 	}
 
+	public void addPlayer(SimplePlayer player) {
+		otherPlayers.add(player);
+	}
+
 	public CellPane getCell(int row, int column) {
 		return cells[row][column];
+	}
+
+	public SimplePlayer getPlayerById(int playerId) {
+		return otherPlayers.stream().filter(p -> p.getSessionId() == playerId).findFirst().orElse(null);
+	}
+
+	public List<SimplePlayer> getPlayers() {
+		return otherPlayers;
 	}
 
 	public void markAllCells(Color color) {

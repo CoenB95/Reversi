@@ -32,7 +32,6 @@ import java.util.concurrent.Executors;
 public class ClientMain extends Application implements ReversiConstants {
 
 	private ReversiPlayer player;
-	private List<SimplePlayer> otherPlayers;
 	private Board board;
 	private ExecutorService service;
 
@@ -119,7 +118,6 @@ public class ClientMain extends Application implements ReversiConstants {
 			Socket socket = new Socket(InetAddress.getLocalHost(), 8081);
 
 			player = new ReversiPlayer(playerName, socket);
-			otherPlayers = new ArrayList<>();
 
 			//Introduce yourself
 			//Send player name
@@ -157,7 +155,7 @@ public class ClientMain extends Application implements ReversiConstants {
 					System.out.println("Received player addition notification, expecting object");
 					SimplePlayer otherPlayer = (SimplePlayer) ois.readObject();
 					System.out.print("We'll be playing against " + otherPlayer);
-					otherPlayers.add(otherPlayer);
+					boardGridPane.addPlayer(otherPlayer);
 				}
 			}
 
@@ -175,10 +173,6 @@ public class ClientMain extends Application implements ReversiConstants {
 		}
 	}
 
-	private SimplePlayer getPlayerById(int playerId) {
-		return otherPlayers.stream().filter(p -> p.getSessionId() == playerId).findFirst().orElse(null);
-	}
-
 	private void goToBoardScene() {
 		primaryStage.setScene(boardScene);
 	}
@@ -191,7 +185,7 @@ public class ClientMain extends Application implements ReversiConstants {
 	 * Gameplay logic. This method returns when the game has finished.
 	 */
 	private void playGame() {
-		board.setupBoard();
+		board.setupBoard(boardGridPane.getPlayers().size());
 		try {
 			ObjectInputStream ois = player.getInputStream();
 			while (true) {
@@ -199,13 +193,13 @@ public class ClientMain extends Application implements ReversiConstants {
 				if (com == CLIENT_RECEIVE_OTHER_WON) {
 					int playerId = ois.readInt();
 					Platform.runLater(() -> boardStatusLabel.setText("Ahw... '" +
-							getPlayerById(playerId).getName() + "' won. Next time better."));
+							boardGridPane.getPlayerById(playerId).getName() + "' won. Next time better."));
 					break;
 				} else if (com == CLIENT_RECEIVE_YOU_WON) {
 					Platform.runLater(() -> boardStatusLabel.setText("You won! Congrats!"));
 					break;
 				} else if (com == CLIENT_RECEIVE_OTHER_START_MOVE) {
-					SimplePlayer p = getPlayerById(ois.readInt());
+					SimplePlayer p = boardGridPane.getPlayerById(ois.readInt());
 					Platform.runLater(() -> boardStatusLabel.setText("Waiting for " + p.getName() + "'s move..."));
 				} else if (com == CLIENT_RECEIVE_OTHER_DID_MOVE) {
 					int playerId = ois.readInt();

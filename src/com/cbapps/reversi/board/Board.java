@@ -111,14 +111,14 @@ public class Board {
 	 * Setups the board, effectively placing four start-stones.
 	 * Note that this method does NOT clear the board.
 	 */
-	public void setupBoard() {
+	public void setupBoard(int playerAmount) {
 		int centerLeft = (int) Math.floor((boardWidth - 0.5) / 2);
 		int centerTop = (int) Math.floor((boardHeight - 0.5) / 2);
 		//Setup start field
-		changeCell(centerLeft, centerTop, 1);
-		changeCell(centerLeft + 1, centerTop, 2);
-		changeCell(centerLeft, centerTop + 1, 2);
-		changeCell(centerLeft + 1, centerTop + 1, 1);
+		changeCell(centerLeft, centerTop, 0 % playerAmount + 1);
+		changeCell(centerLeft + 1, centerTop, 1 % playerAmount + 1);
+		changeCell(centerLeft, centerTop + 1, 2 % playerAmount + 1);
+		changeCell(centerLeft + 1, centerTop + 1, 3 % playerAmount + 1);
 	}
 
 	/**
@@ -128,10 +128,15 @@ public class Board {
 	 * @param players the players that will compete each other and need coloring.
 	 */
     public static void setupPlayerColors(List<? extends SimplePlayer> players) {
-        if (players.size() == 2) {
-            players.get(0).setColor(Color.BLACK);
-            players.get(1).setColor(Color.WHITE);
-        }
+        if (players.size() <= 2) {
+            if (players.size() > 0) players.get(0).setColor(Color.BLACK);
+			if (players.size() > 1) players.get(1).setColor(Color.WHITE);
+        } else if (players.size() <= 4) {
+			players.get(0).setColor(Color.RED);
+			players.get(1).setColor(Color.BLUE);
+			players.get(2).setColor(Color.YELLOW);
+			if (players.size() > 3) players.get(3).setColor(Color.FORESTGREEN);
+		}
     }
 
 	/**

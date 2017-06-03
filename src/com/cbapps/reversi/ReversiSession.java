@@ -27,7 +27,6 @@ public class ReversiSession implements Runnable, ReversiConstants {
 
 	public ReversiSession(String sessionName, int boardWidth, int boardHeight, ExecutorService service) {
 		this.board = new Board(boardWidth, boardHeight);
-		this.board.setupBoard();
 		this.sessionName = sessionName;
 		this.players = new ArrayList<>();
 		this.service = service;
@@ -45,15 +44,14 @@ public class ReversiSession implements Runnable, ReversiConstants {
 
 	private void notifyOtherPlayers(ReversiPlayer player) {
 		for (ReversiPlayer p : players) {
-			if (!p.equals(player)) {
-				try {
-					System.out.println("Notify '" + p.getName() + "' of '" + player.getName() + "'");
-					ObjectOutputStream oos = p.getOutputStream();
-					oos.writeInt(SERVER_SEND_PLAYER_ADDED);
-					oos.writeObject(player);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			try {
+				if (p.equals(player)) System.out.println("Notify '" + p.getName() + "' of itself (for color)");
+				else System.out.println("Notify '" + p.getName() + "' of '" + player.getName() + "'");
+				ObjectOutputStream oos = p.getOutputStream();
+				oos.writeInt(SERVER_SEND_PLAYER_ADDED);
+				oos.writeObject(player);
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	}
@@ -79,6 +77,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				int command = dis.readInt();
 				if (command == SERVER_RECEIVE_START_GAME) {
 					ServerMain.log(sessionName, "Received start signal. Setup colors.");
+					board.setupBoard(players.size());
 					Board.setupPlayerColors(players);
 					ServerMain.log(sessionName, "Notifying players of each other...");
 					for (ReversiPlayer p : players) notifyOtherPlayers(p);
