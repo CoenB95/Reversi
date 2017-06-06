@@ -1,6 +1,5 @@
 package com.cbapps.reversi.client;
 
-import com.cbapps.reversi.ReversiConstants;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
@@ -15,7 +14,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
 /**
@@ -106,7 +104,7 @@ public class LoginLayout extends Pane {
 
 	public void disableSessionChosing(boolean value) {
 		sessionComboBox.setDisable(value);
-		newSessionField.setDisable(sessionComboBox.getValue() == null ||
+		newSessionField.setDisable(value || sessionComboBox.getValue() == null ||
 				!sessionComboBox.getValue().equals(ITEM_NEW_SESSION));
 	}
 
