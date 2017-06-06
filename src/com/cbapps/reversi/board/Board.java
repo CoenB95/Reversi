@@ -18,9 +18,9 @@ public class Board {
 
 
     public Board(int rows, int columns) {
-        this.board = new int[rows][columns];
-        this.boardWidth = columns;
-        this.boardHeight = rows;
+		this.board = new int[rows][columns];
+		this.boardWidth = columns;
+		this.boardHeight = rows;
     }
 
 	/**
@@ -119,6 +119,7 @@ public class Board {
 	 * Note that this method does NOT clear the board.
 	 */
 	public void setupBoard(int playerAmount) {
+		this.board = new int[boardHeight][boardWidth];
 		int centerLeft = (int) Math.floor((boardWidth - 0.5) / 2);
 		int centerTop = (int) Math.floor((boardHeight - 0.5) / 2);
 		//Setup start field

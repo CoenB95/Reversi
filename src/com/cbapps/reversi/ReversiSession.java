@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +40,10 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		int id = players.size()+1;
 		players.add(player);
 		return id;
+	}
+
+	public List<ReversiPlayer> getPlayers() {
+		return players;
 	}
 
 	public void open(boolean value) {
@@ -80,25 +85,21 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				ObjectInputStream dis = players.get(0).getInputStream();
 				ServerMain.log(sessionName, "Player '" + players.get(0).getName() +
 						"' can start the game.");
-				int command = dis.readInt();
-				if (command == SERVER_RECEIVE_START_GAME) {
-					opened = false;
-					ServerMain.log(sessionName, "Received start signal. Setup colors.");
-					board.setupBoard(players.size());
-					Board.setupPlayerColors(players);
-					ServerMain.log(sessionName, "Notifying players of each other...");
-					for (ReversiPlayer p : players) notifyOtherPlayers(p);
-					ServerMain.log(sessionName, "Done. Broadcast start signal.");
-					for (ReversiPlayer p : players) {
-						ObjectOutputStream dos = p.getOutputStream();
-						dos.writeInt(SERVER_SEND_START_GAME);
-						dos.writeInt(players.size());
-						dos.flush();
-					}
-					startGame();
-				} else {
-					ServerMain.log(sessionName, "Unexpected command '" + command + "' received.");
+				requireState(players.get(0), players, SERVER_RECEIVE_START_GAME);
+				opened = false;
+				ServerMain.log(sessionName, "Received start signal. Setup colors.");
+				board.setupBoard(players.size());
+				Board.setupPlayerColors(players);
+				ServerMain.log(sessionName, "Notifying players of each other...");
+				for (ReversiPlayer p : players) notifyOtherPlayers(p);
+				ServerMain.log(sessionName, "Done. Broadcast start signal.");
+				for (ReversiPlayer p : players) {
+					ObjectOutputStream dos = p.getOutputStream();
+					dos.writeInt(SERVER_SEND_START_GAME);
+					dos.writeInt(players.size());
+					dos.flush();
 				}
+				startGame();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -114,15 +115,25 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		return false;
 	}
 
-	private void checkState(ReversiPlayer player, int expected)
+	public static int requireState(ReversiPlayer player, Collection<ReversiPlayer> allPlayers, int... expected)
 			throws IOException, IllegalStateException {
-		int value = player.getInputStream().readInt();
-		if (value != expected) {
+		try {
+			int value = player.getInputStream().readInt();
+			for (int accept : expected) {
+				if (value == accept) return value;
+			}
 			String exception;
-			if (value == SERVER_RECEIVE_ERROR) exception = "Client-side error: " +
-					player.getInputStream().readUTF();
-			else exception = "Expected " + expected + " but received " + value;
-			throwIllegalStateException(exception);
+			if (value == SERVER_RECEIVE_ERROR) {
+				exception = "Client-side error: " + player.getInputStream().readUTF();
+				throwIllegalStateException(allPlayers, exception);
+			} else if (value == CLIENT_RECEIVE_ERROR) {
+				exception = "Server-side error: " + player.getInputStream().readUTF();
+				throw new IllegalStateException(exception);
+			} else throw new IllegalStateException("Unexpected " + value + " received");
+			return -1;
+		} catch (IOException e) {
+			throwIllegalStateException(allPlayers, "Connection lost");
+			return -1;
 		}
 	}
 
@@ -137,7 +148,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				ServerMain.log(sessionName, "It's " + currentPlayer.getName() + "'s turn.");
 				if (!checkValidMovesPossibleForPlayer(currentPlayer.getSessionId(), false)) {
 					if (!freeMoveAllowed || !checkValidMovesPossibleForPlayer(currentPlayer.getSessionId(),
-						true)) {
+							true)) {
 						unableToMoveCount++;
 						if (unableToMoveCount > players.size()) {
 							ServerMain.log(sessionName, "None of the players can move. Game is at end.");
@@ -160,7 +171,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 						p.getOutputStream().flush();
 					}
 				}
-				checkState(currentPlayer, SERVER_RECEIVE_MOVE);
+				requireState(currentPlayer, players, SERVER_RECEIVE_MOVE);
 				int row = currentPlayer.getInputStream().readInt();
 				int column = currentPlayer.getInputStream().readInt();
 				boolean free = currentPlayer.getInputStream().readBoolean();
@@ -200,6 +211,14 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		} catch (IOException e) {
 			e.printStackTrace();
 			ServerMain.log(sessionName, "An error happened. Gameplay is disrupted");
+			try {
+				throwIllegalStateException(players, "Connection lost");
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		} catch (IllegalStateException e) {
+			e.printStackTrace();
+			ServerMain.log(sessionName, "An error happened. Gameplay is disrupted");
 		}
 	}
 
@@ -212,10 +231,12 @@ public class ReversiSession implements Runnable, ReversiConstants {
 				});
 	}
 
-	private void throwIllegalStateException(String message) throws IOException, IllegalStateException {
-		for (ReversiPlayer p : players) {
-			p.getOutputStream().writeInt(SERVER_SEND_ERROR);
-			p.getOutputStream().writeUTF(message);
+	public static void throwIllegalStateException(Collection<ReversiPlayer> players, String message)
+			throws IOException, IllegalStateException {
+		if (players != null) {
+			for (ReversiPlayer p : players) {
+				p.getOutputStream().close();
+			}
 		}
 		throw new IllegalStateException(message);
 	}

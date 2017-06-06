@@ -137,4 +137,12 @@ public class LoginLayout extends Pane {
 	public TextField getUsernameField() {
 		return usernameField;
 	}
+
+	public void reset() {
+		welcomeLabel.setText("Connection lost");
+		usernameField.setDisable(false);
+		ipField.setDisable(false);
+		startGameButton.setDisable(true);
+		getSessionOptions().setAll(ITEM_NEW_SESSION);
+	}
 }

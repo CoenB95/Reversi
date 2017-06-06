@@ -2,25 +2,22 @@ package com.cbapps.reversi.client;
 
 import com.cbapps.reversi.ReversiConstants;
 import com.cbapps.reversi.ReversiPlayer;
+import com.cbapps.reversi.ReversiSession;
 import com.cbapps.reversi.SimplePlayer;
 import com.cbapps.reversi.board.Board;
 import com.cbapps.reversi.board.BoardGridPane;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -95,8 +92,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		loginLayout.getChosenSession().addListener((v1, v2, v3) -> {
 			loginLayout.disableSessionChosing(true);
 			service.submit(() -> {
-				if (sendSessionChoice(v3)) playGame();
-				else loginLayout.disableSessionChosing(false);
+				sendSessionChoice(v3);
 			});
 		});
 		loginScene = new Scene(loginLayout, 400, 400);
@@ -154,7 +150,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		return null;
 	}
 
-	private boolean sendSessionChoice(String chosenSessionName) {
+	private void sendSessionChoice(String chosenSessionName) {
 		try {
 			/*if (availableSessions.isEmpty()) {
 				chosenSessionName = "Sessie1";
@@ -164,15 +160,19 @@ public class ClientMain extends Application implements ReversiConstants {
 
 			//Send chosen session
 			ObjectOutputStream oos = player.getOutputStream();
+			oos.writeInt(CLIENT_SEND_SUCCESS);
 			oos.writeUTF(chosenSessionName);
 			oos.flush();
 
 			ObjectInputStream ois = player.getInputStream();
-			int respons = ois.readInt();
-			if (respons != CLIENT_RECEIVE_SUCCESS) {
-				Platform.runLater(() -> loginLayout.getStatusLabel().setText("Couldn't join session, may be closed." +
-						" Try another"));
-				return false;
+			try {
+				ReversiSession.requireState(player, null, CLIENT_RECEIVE_SUCCESS);
+			} catch (IllegalStateException e) {
+				Platform.runLater(() -> {
+					loginLayout.getStatusLabel().setText(e.getMessage());
+					loginLayout.disableSessionChosing(false);
+				});
+				return;
 			}
 			Platform.runLater(() -> loginLayout.getStatusLabel().setText("Joined session. Waiting for start signal..."));
 
@@ -189,7 +189,8 @@ public class ClientMain extends Application implements ReversiConstants {
 
 			//Now, the server will send info about which other players will contest.
 			int command;
-			while ((command = ois.readInt()) != CLIENT_RECEIVE_START_GAME) {
+			while ((command = ReversiSession.requireState(player, null, CLIENT_RECEIVE_PLAYER_ADDED,
+					CLIENT_RECEIVE_START_GAME)) != CLIENT_RECEIVE_START_GAME) {
 				System.out.println("a Received '" + command + "'");
 				if (command == CLIENT_RECEIVE_PLAYER_ADDED) {
 					System.out.println("Received player addition notification, expecting object");
@@ -206,10 +207,11 @@ public class ClientMain extends Application implements ReversiConstants {
 
 			//Go to board scene
 			Platform.runLater(this::goToBoardScene);
-			return true;
+			playGame();
+		} catch (SocketException | EOFException | IllegalStateException e) {
+			Platform.runLater(this::goToLoginScene);
 		} catch (Exception e) {
 			e.printStackTrace();
-			return false;
 		}
 	}
 
@@ -219,6 +221,8 @@ public class ClientMain extends Application implements ReversiConstants {
 
 	private void goToLoginScene() {
 		primaryStage.setScene(loginScene);
+		loginLayout.reset();
+		boardGridPane.getPlayers().clear();
 	}
 
 	/**
@@ -266,6 +270,7 @@ public class ClientMain extends Application implements ReversiConstants {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			Platform.runLater(this::goToLoginScene);
 		}
 		System.out.println("Game ended.");
 	}
@@ -273,6 +278,9 @@ public class ClientMain extends Application implements ReversiConstants {
 	@Override
 	public void stop() throws Exception {
 		super.stop();
+		if (player != null) {
+			player.getOutputStream().close();
+		}
 		service.shutdown();
 	}
 

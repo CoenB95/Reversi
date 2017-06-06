@@ -11,7 +11,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -23,9 +22,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.cbapps.reversi.ReversiConstants.SERVER_RECEIVE_START_GAME;
-import static com.cbapps.reversi.ReversiConstants.SERVER_SEND_ERROR;
-import static com.cbapps.reversi.ReversiConstants.SERVER_SEND_SUCCESS;
+import static com.cbapps.reversi.ReversiConstants.*;
 
 /**
  * @author Coen Boelhouwers
@@ -38,6 +35,7 @@ public class ServerMain extends Application {
 	private int port = 8081;
 	private ServerSocketChannel server;
 	private ExecutorService service;
+	private ReversiPlayer incomingPlayer;
 
 	private static TextArea textArea;
 
@@ -63,30 +61,31 @@ public class ServerMain extends Application {
 					try {
 						SocketChannel channel = server.accept();
 						if (channel != null) {
-							ReversiPlayer player = new ReversiPlayer(channel.socket());
+							incomingPlayer = new ReversiPlayer(channel.socket());
 
 							//Request player's name
-							ObjectInputStream ois = player.getInputStream();
-							player.setName(ois.readUTF());
+							ObjectInputStream ois = incomingPlayer.getInputStream();
+							incomingPlayer.setName(ois.readUTF());
 
 							log(TAG, "New player found (IP: " + channel.socket().getInetAddress().getHostAddress() +
-									", Player name: '" + player.getName() + "').");
+									", Player name: '" + incomingPlayer.getName() + "').");
 
 							//Send available sessions
-							ObjectOutputStream oos = player.getOutputStream();
+							ObjectOutputStream oos = incomingPlayer.getOutputStream();
 							List<String> sessionNames = new ArrayList<>();
 							sessions.stream()
 									.filter(ReversiSession::isOpened)
 									.forEach(s -> sessionNames.add(s.getSessionName()));
-							log(TAG, "Available sessions for '" + player.getName() + "': " + sessionNames);
+							log(TAG, "Available sessions for '" + incomingPlayer.getName() + "': " + sessionNames);
 							oos.writeObject(sessionNames);
 							oos.flush();
 
 							while (true) {
 								//Receive chosen session
-								log(TAG, "Waiting for '" + player.getName() + "' to choose session...");
+								log(TAG, "Waiting for '" + incomingPlayer.getName() + "' to choose session...");
+								ReversiSession.requireState(incomingPlayer, null, SERVER_RECEIVE_SUCCESS);
 								String chosenSessionName = ois.readUTF();
-								log(TAG, "Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.");
+								log(TAG, "Player '" + incomingPlayer.getName() + "' chose for session '" + chosenSessionName + "'.");
 
 								//Match the sessionName with an actual session, create turnStones new one with the
 								//name if there is no match.
@@ -97,11 +96,12 @@ public class ServerMain extends Application {
 								int sessionId;
 								if (chosenSession != null) {
 									if (chosenSession.isOpened()) {
-										sessionId = chosenSession.addPlayer(player);
+										sessionId = chosenSession.addPlayer(incomingPlayer);
 									} else {
 										log(TAG, "Session '" + chosenSession.getSessionName() + "' is already " +
-												"closed. Chose a different one.");
+												"closed. Choose a different one.");
 										oos.writeInt(SERVER_SEND_ERROR);
+										oos.writeUTF("Session is already started. Try another");
 										oos.flush();
 										continue;
 									}
@@ -110,14 +110,14 @@ public class ServerMain extends Application {
 									chosenSession = new ReversiSession(chosenSessionName,
 											8, 8, service);
 									log(TAG, "Started new session named '" + chosenSession.getSessionName() + "'");
-									sessionId = chosenSession.addPlayer(player);
+									sessionId = chosenSession.addPlayer(incomingPlayer);
 									sessions.add(chosenSession);
 								}
 
 								System.out.println("Player sessionId=" + sessionId);
 								//Acknowledge by sending back the sessionID.
-								player.setSessionId(sessionId);
-								log(TAG, "Added player '" + player + "' to session '" + chosenSession.getSessionName() +
+								incomingPlayer.setSessionId(sessionId);
+								log(TAG, "Added player '" + incomingPlayer + "' to session '" + chosenSession.getSessionName() +
 										"' (sessionID = " + sessionId + ")");
 								System.out.println("Send sessionID...");
 								oos.writeInt(SERVER_SEND_SUCCESS);
@@ -131,8 +131,11 @@ public class ServerMain extends Application {
 						Thread.sleep(100);
 					} catch (Exception e) {
 						e.printStackTrace();
+						if (incomingPlayer != null) {
+							log(TAG, "Connection lost with '" + incomingPlayer.getName() + "'.");
+							incomingPlayer.getOutputStream().close();
+						} else log(TAG, "Connection lost.");
 					}
-
 				}
 				System.out.println("Service shutdown");
 			} catch (IOException e) {
@@ -154,6 +157,16 @@ public class ServerMain extends Application {
 	@Override
 	public void stop() throws Exception {
 		super.stop();
+		if (incomingPlayer != null) {
+			System.err.println("Force close connection with " + incomingPlayer.getName());
+			incomingPlayer.getOutputStream().close();
+		}
+		for (ReversiSession session : sessions) {
+			for (ReversiPlayer p : session.getPlayers()) {
+				System.err.println("Force close connection with " + p.getName());
+				p.getOutputStream().close();
+			}
+		}
 		service.shutdown();
 	}
 
