@@ -20,6 +20,7 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -75,8 +76,20 @@ public class ClientMain extends Application implements ReversiConstants {
 			loginLayout.getUsernameField().setDisable(true);
 			loginLayout.getIpField().setDisable(true);
 			service.submit(() -> {
-				if (connectToServer(loginLayout.getUsernameField().getText()))
-					playGame();
+				List<String> sessionNames = connectToServer(loginLayout.getUsernameField().getText());
+				if (sessionNames == null) {
+					loginLayout.getUsernameField().setDisable(false);
+					loginLayout.getIpField().setDisable(false);
+				} else {
+					loginLayout.getSessionOptions().addAll(sessionNames);
+					loginLayout.disableSessionChosing(false);
+				}
+			});
+		});
+		loginLayout.getChosenSession().addListener((v1, v2, v3) -> {
+			service.submit(() -> {
+				loginLayout.disableSessionChosing(true);
+				if (sendSessionChoice(v3)) playGame();
 			});
 		});
 		loginScene = new Scene(loginLayout, 400, 400);
@@ -113,7 +126,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		primaryStage.show();
 	}
 
-	private boolean connectToServer(String playerName) {
+	private List<String> connectToServer(String playerName) {
 		try {
 			Socket socket = new Socket(loginLayout.getIpAddress(), PORT);
 
@@ -127,20 +140,28 @@ public class ClientMain extends Application implements ReversiConstants {
 
 			//Receive available sessions
 			ObjectInputStream ois = player.getInputStream();
-			List<String> availableSessions = (List<String>) ois.readObject();
+			return (List<String>) ois.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 
-			String chosenSessionName;
-			if (availableSessions.isEmpty()) {
+	private boolean sendSessionChoice(String chosenSessionName) {
+		try {
+			/*if (availableSessions.isEmpty()) {
 				chosenSessionName = "Sessie1";
 			} else {
 				chosenSessionName = availableSessions.get(0);
-			}
+			}*/
 
 			//Send chosen session
-			dos.writeUTF(chosenSessionName);
-			dos.flush();
+			ObjectOutputStream oos = player.getOutputStream();
+			oos.writeUTF(chosenSessionName);
+			oos.flush();
 
 			//Receive the sessionID
+			ObjectInputStream ois = player.getInputStream();
 			player.setSessionId(ois.readInt());
 			System.out.println("Received sessionID: " + player.getSessionId());
 
