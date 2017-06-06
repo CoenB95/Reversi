@@ -19,7 +19,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private Board board;
 	private ExecutorService service;
 	private String sessionName;
-	private int sessionNr;
+	private boolean opened;
 	private int activePlayer = 0;
 	private int unableToMoveCount = 0;
 	private boolean freeMoveAllowed = true;
@@ -31,12 +31,22 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		this.sessionName = sessionName;
 		this.players = new ArrayList<>();
 		this.service = service;
+		this.opened = true;
 	}
 
-	public int addPlayer(ReversiPlayer player){
+	public int addPlayer(ReversiPlayer player) {
+		if (!opened) throw new IllegalStateException("Try to add players while session is closed");
 		int id = players.size()+1;
 		players.add(player);
 		return id;
+	}
+
+	public void open(boolean value) {
+		opened = value;
+	}
+
+	public boolean isOpened() {
+		return opened;
 	}
 
 	public String getSessionName() {
@@ -57,11 +67,6 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		}
 	}
 
-	public ReversiSession setSessionNr(int nr) {
-		this.sessionNr = nr;
-		return this;
-	}
-
 	public void startGame() {
 		service.submit(this);
 	}
@@ -77,6 +82,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 						"' can start the game.");
 				int command = dis.readInt();
 				if (command == SERVER_RECEIVE_START_GAME) {
+					opened = false;
 					ServerMain.log(sessionName, "Received start signal. Setup colors.");
 					board.setupBoard(players.size());
 					Board.setupPlayerColors(players);

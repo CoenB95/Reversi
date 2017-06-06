@@ -29,6 +29,7 @@ public class LoginLayout extends Pane {
 	private Button startGameButton;
 	private ComboBox<String> sessionComboBox;
 	private TextField newSessionField;
+	private Label welcomeLabel;
 
 	private StringProperty chosenSession;
 
@@ -41,7 +42,7 @@ public class LoginLayout extends Pane {
 		reversiLabel.layoutXProperty().bind(widthProperty().subtract(reversiLabel.widthProperty()).divide(2));
 		reversiLabel.layoutYProperty().bind(heightProperty().divide(3).subtract(reversiLabel.heightProperty()));
 
-		Label welcomeLabel = new Label("Welcome. Insert your name:");
+		welcomeLabel = new Label("Welcome. Insert your name:");
 		welcomeLabel.setFont(Font.font("Roboto", 20));
 		welcomeLabel.setTextFill(Color.WHITE);
 		welcomeLabel.setWrapText(true);
@@ -95,7 +96,8 @@ public class LoginLayout extends Pane {
 			}
 		});
 		newSessionField.setOnAction(event -> {
-			if (sessionComboBox.getValue().equals(ITEM_NEW_SESSION)) {
+			if (sessionComboBox.getValue().equals(ITEM_NEW_SESSION) &&
+					!getSessionOptions().contains(newSessionField.getText())) {
 				chosenSession.set(newSessionField.getText());
 			}
 		});
@@ -126,6 +128,10 @@ public class LoginLayout extends Pane {
 
 	public Button getStartGameButton() {
 		return startGameButton;
+	}
+
+	public Label getStatusLabel() {
+		return welcomeLabel;
 	}
 
 	public TextField getUsernameField() {

@@ -76,23 +76,28 @@ public class ClientMain extends Application implements ReversiConstants {
 			loginLayout.getUsernameField().setDisable(true);
 			loginLayout.getIpField().setDisable(true);
 			service.submit(() -> {
+				Platform.runLater(() -> loginLayout.getStatusLabel().setText("Connecting..." +
+						" This may take a while."));
 				List<String> sessionNames = connectToServer(loginLayout.getUsernameField().getText());
 				if (sessionNames == null) {
 					loginLayout.getUsernameField().setDisable(false);
 					loginLayout.getIpField().setDisable(false);
+					Platform.runLater(() -> loginLayout.getStatusLabel().setText("Something went wrong." +
+							" Try again."));
 				} else {
 					loginLayout.getSessionOptions().addAll(sessionNames);
 					loginLayout.disableSessionChosing(false);
+					Platform.runLater(() -> loginLayout.getStatusLabel().setText("Choose a session to join" +
+							" or create a new one:"));
 				}
 			});
 		});
 		loginLayout.getChosenSession().addListener((v1, v2, v3) -> {
-			if (!loginLayout.getSessionOptions().contains(v3)) {
-				loginLayout.disableSessionChosing(true);
-				service.submit(() -> {
-					if (sendSessionChoice(v3)) playGame();
-				});
-			}
+			loginLayout.disableSessionChosing(true);
+			service.submit(() -> {
+				if (sendSessionChoice(v3)) playGame();
+				else loginLayout.disableSessionChosing(false);
+			});
 		});
 		loginScene = new Scene(loginLayout, 400, 400);
 
@@ -162,13 +167,25 @@ public class ClientMain extends Application implements ReversiConstants {
 			oos.writeUTF(chosenSessionName);
 			oos.flush();
 
-			//Receive the sessionID
 			ObjectInputStream ois = player.getInputStream();
+			int respons = ois.readInt();
+			if (respons != CLIENT_RECEIVE_SUCCESS) {
+				Platform.runLater(() -> loginLayout.getStatusLabel().setText("Couldn't join session, may be closed." +
+						" Try another"));
+				return false;
+			}
+			Platform.runLater(() -> loginLayout.getStatusLabel().setText("Joined session. Waiting for start signal..."));
+
+			//Receive the sessionID
 			player.setSessionId(ois.readInt());
 			System.out.println("Received sessionID: " + player.getSessionId());
 
 			//If we are the first player, we may start the game
-			if (player.getSessionId() == 1) loginLayout.getStartGameButton().setDisable(false);
+			if (player.getSessionId() == 1) {
+				loginLayout.getStartGameButton().setDisable(false);
+				Platform.runLater(() -> loginLayout.getStatusLabel().setText("Session opened, other players may join." +
+						" When ready, click start."));
+			}
 
 			//Now, the server will send info about which other players will contest.
 			int command;

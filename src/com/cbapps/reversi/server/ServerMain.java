@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.cbapps.reversi.ReversiConstants.SERVER_RECEIVE_START_GAME;
+import static com.cbapps.reversi.ReversiConstants.SERVER_SEND_ERROR;
+import static com.cbapps.reversi.ReversiConstants.SERVER_SEND_SUCCESS;
 
 /**
  * @author Coen Boelhouwers
@@ -73,50 +75,58 @@ public class ServerMain extends Application {
 							//Send available sessions
 							ObjectOutputStream oos = player.getOutputStream();
 							List<String> sessionNames = new ArrayList<>();
-							sessions.forEach(s -> sessionNames.add(s.getSessionName()));
+							sessions.stream()
+									.filter(ReversiSession::isOpened)
+									.forEach(s -> sessionNames.add(s.getSessionName()));
 							log(TAG, "Available sessions for '" + player.getName() + "': " + sessionNames);
 							oos.writeObject(sessionNames);
 							oos.flush();
 
-							//Receive chosen session
-							System.out.println("Waiting for session choice...");
-							String chosenSessionName = ois.readUTF();
-							System.out.println("Received session choice: '" + chosenSessionName + "'");
-							log(TAG, "Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.");
+							while (true) {
+								//Receive chosen session
+								log(TAG, "Waiting for '" + player.getName() + "' to choose session...");
+								String chosenSessionName = ois.readUTF();
+								log(TAG, "Player '" + player.getName() + "' chose for session '" + chosenSessionName + "'.");
 
-							//Match the sessionName with an actual session, create turnStones new one with the
-							//name if there is no match.
-							ReversiSession chosenSession = sessions.stream()
-									.filter(s -> s.getSessionName().equals(chosenSessionName))
-									.findFirst().orElse(null);
-							System.out.println("Searching session...");
+								//Match the sessionName with an actual session, create turnStones new one with the
+								//name if there is no match.
+								ReversiSession chosenSession = sessions.stream()
+										.filter(s -> s.getSessionName().equals(chosenSessionName))
+										.findFirst().orElse(null);
 
-							int sessionId;
-							if (chosenSession != null) {
-								System.out.println("Session exists. Add player...");
-								sessionId = chosenSession.addPlayer(player);
-								System.out.println("Player added.");
-							} else {
-								System.out.println("Session doesn't exist. Creating one with same name...");
-								chosenSession = new ReversiSession(chosenSessionName,
-										8, 8, service)
-										.setSessionNr(sessions.size());
-								System.out.println("Add player...");
-								sessionId = chosenSession.addPlayer(player);
-								System.out.println("Player added.");
-								sessions.add(chosenSession);
-								log(TAG, "Started turnStones new session named '" + chosenSession.getSessionName() + "'");
+								int sessionId;
+								if (chosenSession != null) {
+									if (chosenSession.isOpened()) {
+										sessionId = chosenSession.addPlayer(player);
+									} else {
+										log(TAG, "Session '" + chosenSession.getSessionName() + "' is already " +
+												"closed. Chose a different one.");
+										oos.writeInt(SERVER_SEND_ERROR);
+										oos.flush();
+										continue;
+									}
+								} else {
+									System.out.println("Session doesn't exist. Creating one with same name...");
+									chosenSession = new ReversiSession(chosenSessionName,
+											8, 8, service);
+									log(TAG, "Started new session named '" + chosenSession.getSessionName() + "'");
+									sessionId = chosenSession.addPlayer(player);
+									sessions.add(chosenSession);
+								}
+
+								System.out.println("Player sessionId=" + sessionId);
+								//Acknowledge by sending back the sessionID.
+								player.setSessionId(sessionId);
+								log(TAG, "Added player '" + player + "' to session '" + chosenSession.getSessionName() +
+										"' (sessionID = " + sessionId + ")");
+								System.out.println("Send sessionID...");
+								oos.writeInt(SERVER_SEND_SUCCESS);
+								oos.writeInt(sessionId);
+								oos.flush();
+								System.out.println("SessionID send, start session if needed.");
+								chosenSession.startSession();
+								break;
 							}
-							System.out.println("Player sessionId=" + sessionId);
-							//Acknowledge by sending back the sessionID.
-							player.setSessionId(sessionId);
-							log(TAG, "Added player '" + player + "' to session '" + chosenSession.getSessionName() +
-									"' (sessionID = " + sessionId + ")");
-							System.out.println("Send sessionID...");
-							oos.writeInt(sessionId);
-							oos.flush();
-							System.out.println("SessionID send, start session if needed.");
-							chosenSession.startSession();
 						}
 						Thread.sleep(100);
 					} catch (Exception e) {
