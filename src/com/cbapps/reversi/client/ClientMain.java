@@ -73,6 +73,7 @@ public class ClientMain extends Application implements ReversiConstants {
 		});
 		loginLayout.getUsernameField().setOnAction(event -> {
 			loginLayout.getUsernameField().setDisable(true);
+			loginLayout.getIpField().setDisable(true);
 			service.submit(() -> {
 				if (connectToServer(loginLayout.getUsernameField().getText()))
 					playGame();
@@ -114,7 +115,7 @@ public class ClientMain extends Application implements ReversiConstants {
 
 	private boolean connectToServer(String playerName) {
 		try {
-			Socket socket = new Socket(InetAddress.getLocalHost(), 8081);
+			Socket socket = new Socket(loginLayout.getIpAddress(), PORT);
 
 			player = new ReversiPlayer(playerName, socket);
 

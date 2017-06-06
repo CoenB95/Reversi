@@ -4,6 +4,8 @@ package com.cbapps.reversi;
  * @author Coen Boelhouwers
  */
 public interface ReversiConstants {
+	int PORT = 8081;
+
 	/**Usage: [PLAYER_ADDED][{@link SimplePlayer} player]*/
 	int SERVER_SEND_PLAYER_ADDED = 1000;
 
