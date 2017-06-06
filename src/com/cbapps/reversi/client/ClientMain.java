@@ -14,6 +14,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -36,10 +37,8 @@ public class ClientMain extends Application implements ReversiConstants {
 	private ExecutorService service;
 	private boolean placeFree;
 
-	//Login Layout
-	private Scene 		loginScene;
-	private TextField 	loginUsernameField;
-	private Button 		loginStartGameButton;
+	private Scene loginScene;
+	private LoginLayout loginLayout;
 
 	//Board Layout
 	private Scene 			boardScene;
@@ -52,36 +51,34 @@ public class ClientMain extends Application implements ReversiConstants {
 	public void start(Stage primaryStage) throws Exception {
 		this.primaryStage = primaryStage;
 		service = Executors.newCachedThreadPool();
+		//Load in fonts for use across the app.
+		Font.loadFont(getClass().getResourceAsStream("/Roboto-Regular.ttf"), 100);
+		Font.loadFont(getClass().getResourceAsStream("/Roboto-Thin.ttf"), 100);
 
 		player = new ReversiPlayer("Player 1", Color.WHITE, null);
 		player.setSessionId(1);
 
-		//Login Scene
-		VBox layout1 = new VBox(40);
-		Label welcomelabel = new Label("Welcome, Please insert name here.");
-		loginStartGameButton = new Button("Start");
-		loginStartGameButton.setDisable(true);
-		loginUsernameField = new TextField();
-		loginUsernameField.setOnAction(event -> {
-			loginUsernameField.setDisable(true);
+		loginLayout = new LoginLayout();
+		loginLayout.getStartGameButton().setOnAction(event -> {
 			service.submit(() -> {
-				if (connectToServer(loginUsernameField.getText()))
+				try {
+					System.out.println("Send start game");
+					ObjectOutputStream dos = player.getOutputStream();
+					dos.writeInt(CLIENT_SEND_START_GAME);
+					dos.flush();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			});
+		});
+		loginLayout.getUsernameField().setOnAction(event -> {
+			loginLayout.getUsernameField().setDisable(true);
+			service.submit(() -> {
+				if (connectToServer(loginLayout.getUsernameField().getText()))
 					playGame();
 			});
 		});
-
-		layout1.getChildren().addAll(welcomelabel, loginUsernameField, loginStartGameButton);
-		loginScene = new Scene(layout1, 300, 300);
-		loginStartGameButton.setOnAction(e -> service.submit(() -> {
-			try {
-				System.out.println("Send start game");
-				ObjectOutputStream dos = player.getOutputStream();
-				dos.writeInt(CLIENT_SEND_START_GAME);
-				dos.flush();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-		}));
+		loginScene = new Scene(loginLayout, 400, 400);
 
 		//Board Scene
 		board = new Board(8, 8);
@@ -147,7 +144,7 @@ public class ClientMain extends Application implements ReversiConstants {
 			System.out.println("Received sessionID: " + player.getSessionId());
 
 			//If we are the first player, we may start the game
-			if (player.getSessionId() == 1) loginStartGameButton.setDisable(false);
+			if (player.getSessionId() == 1) loginLayout.getStartGameButton().setDisable(false);
 
 			//Now, the server will send info about which other players will contest.
 			int command;
