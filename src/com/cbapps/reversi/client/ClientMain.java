@@ -10,6 +10,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -249,10 +250,12 @@ public class ClientMain extends Application implements ReversiConstants {
 				int com = ois.readInt();
 				if (com == CLIENT_RECEIVE_OTHER_WON) {
 					int playerId = ois.readInt();
+					showWinner(playerId);
 					Platform.runLater(() -> boardStatusLabel.setText("Ahw... '" +
 							boardGridPane.getPlayerById(playerId).getName() + "' won. Next time better."));
 					break;
 				} else if (com == CLIENT_RECEIVE_YOU_WON) {
+				    showWinner(player.getSessionId());
 					Platform.runLater(() -> boardStatusLabel.setText("You won! Congrats!"));
 					break;
 				} else if (com == CLIENT_RECEIVE_OTHER_START_MOVE) {
@@ -317,4 +320,32 @@ public class ClientMain extends Application implements ReversiConstants {
 	public static void main(String[] args) {
 		launch(ClientMain.class, args);
 	}
+
+	public void showWinner(int playerID){
+        Label wonLabel = new Label();
+        wonLabel.setFont(Font.font("Roboto Thin", 100));
+        wonLabel.layoutXProperty().bind(boardGridPane.widthProperty().divide(2).subtract(wonLabel
+                .widthProperty().divide(2)));
+        wonLabel.layoutYProperty().bind(boardGridPane.heightProperty().divide(2).subtract(wonLabel
+                .heightProperty().divide(2)));
+
+        Button backButton = new Button("Back");
+        backButton.layoutXProperty().bind(boardGridPane.widthProperty().divide(2).subtract(backButton
+                .widthProperty().divide(2)));
+        backButton.layoutYProperty().bind(wonLabel.layoutYProperty().add(wonLabel.heightProperty()));
+//        backButton.setOnAction(event -> {
+//            goToLoginScene();
+//            boardGridPane.getChildren().removeAll(wonLabel, backButton);
+//        });
+
+	    if (player.getSessionId() == playerID){
+	        wonLabel.setText("YOU WON!");
+	        wonLabel.setTextFill(Color.GREEN);
+        } else {
+	        wonLabel.setText("YOU LOST!");
+	        wonLabel.setTextFill(Color.RED);
+        }
+        boardGridPane.getChildren().addAll(wonLabel, backButton);
+    }
+
 }

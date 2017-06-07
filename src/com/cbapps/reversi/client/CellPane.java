@@ -2,11 +2,13 @@ package com.cbapps.reversi.client;
 
 import javafx.animation.RotateTransition;
 import javafx.beans.binding.Bindings;
+import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
 import javafx.scene.transform.Rotate;
 import javafx.util.Duration;
 
