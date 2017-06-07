@@ -20,6 +20,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 	private Board board;
 	private ExecutorService service;
 	private String sessionName;
+	private boolean finished;
 	private boolean opened;
 	private int activePlayer = 0;
 	private int unableToMoveCount = 0;
@@ -49,6 +50,10 @@ public class ReversiSession implements Runnable, ReversiConstants {
 
 	public void open(boolean value) {
 		opened = value;
+	}
+
+	public boolean isFinished() {
+		return finished;
 	}
 
 	public boolean isOpened() {
@@ -101,6 +106,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 					dos.flush();
 				}
 				startGame();
+				finished = true;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

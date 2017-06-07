@@ -118,10 +118,6 @@ public class LoginLayout extends Pane {
 		return ipField;
 	}
 
-	public StringProperty getChosenSession() {
-		return chosenSession;
-	}
-
 	public ObservableList<String> getSessionOptions() {
 		return sessionComboBox.getItems();
 	}
@@ -138,11 +134,25 @@ public class LoginLayout extends Pane {
 		return usernameField;
 	}
 
+	public void setOnSessionChosen(OnSessionChosenListener l) {
+		chosenSession.addListener((v1, v2, v3) -> {
+			if (!sessionComboBox.isDisabled() && l != null) l.onSessionChosen(v3);
+		});
+	}
+
 	public void reset() {
 		welcomeLabel.setText("Connection lost");
 		usernameField.setDisable(false);
 		ipField.setDisable(false);
 		startGameButton.setDisable(true);
 		getSessionOptions().setAll(ITEM_NEW_SESSION);
+		chosenSession.set("");
+		sessionComboBox.setDisable(true);
+		newSessionField.setDisable(true);
+		newSessionField.setText("");
+	}
+
+	public interface OnSessionChosenListener {
+		void onSessionChosen(String sessionName);
 	}
 }

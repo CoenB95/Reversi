@@ -70,6 +70,9 @@ public class ServerMain extends Application {
 							log(TAG, "New player found (IP: " + channel.socket().getInetAddress().getHostAddress() +
 									", Player name: '" + incomingPlayer.getName() + "').");
 
+							//Good time to cleanup by removing finished sessions, so they can be reused.
+							sessions.removeIf(ReversiSession::isFinished);
+
 							//Send available sessions
 							ObjectOutputStream oos = incomingPlayer.getOutputStream();
 							List<String> sessionNames = new ArrayList<>();
