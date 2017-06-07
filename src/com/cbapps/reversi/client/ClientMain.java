@@ -8,9 +8,11 @@ import com.cbapps.reversi.board.Board;
 import com.cbapps.reversi.board.BoardGridPane;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -42,6 +44,7 @@ public class ClientMain extends Application implements ReversiConstants {
 	private Scene 			boardScene;
 	private BoardGridPane	boardGridPane;
 	private Label 			boardStatusLabel;
+	private CellPane		boardStatusCell;
 
 	private Stage primaryStage;
 
@@ -116,12 +119,18 @@ public class ClientMain extends Application implements ReversiConstants {
 				});
 			}
 		});
+		boardStatusCell = new CellPane(0, 0);
+		boardStatusCell.setPrefSize(20, 20);
 		boardStatusLabel = new Label();
+		boardStatusLabel.setFont(Font.font("monospaced"));
 		boardGridPane.setDisable(true);
+
+		HBox boardStatusBar = new HBox(10, boardStatusCell, boardStatusLabel);
+		boardStatusBar.setAlignment(Pos.CENTER_LEFT);
 
 		BorderPane borderPane = new BorderPane();
 		borderPane.setCenter(boardGridPane);
-		borderPane.setBottom(boardStatusLabel);
+		borderPane.setBottom(boardStatusBar);
 		boardScene = new Scene(borderPane, 400, 400);
 
 		primaryStage.setScene(loginScene);
@@ -244,7 +253,10 @@ public class ClientMain extends Application implements ReversiConstants {
 					break;
 				} else if (com == CLIENT_RECEIVE_OTHER_START_MOVE) {
 					SimplePlayer p = boardGridPane.getPlayerById(ois.readInt());
-					Platform.runLater(() -> boardStatusLabel.setText("Waiting for " + p.getName() + "'s move..."));
+					Platform.runLater(() -> {
+						boardStatusLabel.setText("Waiting for " + p.getName() + "'s move...");
+						boardStatusCell.changePossession(p.getColor());
+					});
 				} else if (com == CLIENT_RECEIVE_OTHER_DID_MOVE) {
 					int playerId = ois.readInt();
 					int row = ois.readInt();
@@ -262,7 +274,10 @@ public class ClientMain extends Application implements ReversiConstants {
 						placeFree = true;
 					} else {
 						boardGridPane.markCells(options, Color.WHITE);
-						Platform.runLater(() -> boardStatusLabel.setText("It's your turn"));
+						Platform.runLater(() -> {
+							boardStatusLabel.setText("It's your turn");
+							boardStatusCell.changePossession(player.getColor());
+						});
 						placeFree = false;
 					}
 					boardGridPane.setDisable(false);
