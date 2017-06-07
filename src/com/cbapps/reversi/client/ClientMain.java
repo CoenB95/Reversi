@@ -329,25 +329,19 @@ public class ClientMain extends Application implements ReversiConstants {
         Platform.runLater(() -> {
             VBox vbox = new VBox();
             vbox.setAlignment(Pos.CENTER);
-            vbox.setBackground(new Background(new BackgroundFill(new Color(0,0,0,0.5), null,
+            vbox.setBackground(new Background(new BackgroundFill(new Color(0,0,0,0.6), null,
                     null)));
 
             Label wonLabel = new Label();
-            wonLabel.setFont(Font.font("Roboto Thin", 60));
-//            wonLabel.layoutXProperty().bind(boardGridPane.widthProperty().divide(2).subtract(wonLabel
-//                    .widthProperty().divide(2)));
-//            wonLabel.layoutYProperty().bind(boardGridPane.heightProperty().divide(2).subtract(wonLabel
-//                    .heightProperty().divide(2)));
+            wonLabel.setFont(Font.font("Roboto", 60));
             Button backButton = new Button("Back");
-//            backButton.layoutXProperty().bind(boardGridPane.widthProperty().divide(2).subtract(backButton
-//                    .widthProperty().divide(2)));
-//            backButton.layoutYProperty().bind(wonLabel.layoutYProperty().add(wonLabel.heightProperty()));
             backButton.setOnAction(event -> {
                 goToLoginScene();
                 boardLayout.getChildren().remove(vbox);
             });
 
             vbox.getChildren().addAll(wonLabel,backButton);
+            vbox.toFront();
 
             if (player.getSessionId() == playerID) {
                 wonLabel.setText("YOU WON!");
