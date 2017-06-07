@@ -18,9 +18,9 @@ public class Board {
 
 
     public Board(int rows, int columns) {
-        this.board = new int[rows][columns];
-        this.boardWidth = columns;
-        this.boardHeight = rows;
+		this.board = new int[rows][columns];
+		this.boardWidth = columns;
+		this.boardHeight = rows;
     }
 
 	/**
@@ -30,9 +30,9 @@ public class Board {
 	 * @param column the column index.
 	 * @param playerId the new cell owner's id.
 	 */
-	public void changeCell(int row, int column, int playerId) {
+	public void changeCell(int row, int column, int playerId, boolean quick) {
 		board[row][column] = playerId;
-		if (listener != null) listener.onCellChanged(row, column, playerId);
+		if (listener != null) listener.onCellChanged(row, column, playerId, quick);
 	}
 
 	/**
@@ -119,13 +119,21 @@ public class Board {
 	 * Note that this method does NOT clear the board.
 	 */
 	public void setupBoard(int playerAmount) {
+		for (int i = 0; i < boardWidth; i++) {
+			for (int j = 0; j < boardHeight; j++) {
+				if (board[i][j] != EMPTY_CELL) {
+					changeCell(i, j, EMPTY_CELL, true);
+					board[i][j] = EMPTY_CELL;
+				}
+			}
+		}
 		int centerLeft = (int) Math.floor((boardWidth - 0.5) / 2);
 		int centerTop = (int) Math.floor((boardHeight - 0.5) / 2);
 		//Setup start field
-		changeCell(centerTop, centerLeft, 0 % playerAmount + 1);
-		changeCell(centerTop, centerLeft + 1, 1 % playerAmount + 1);
-		changeCell(centerTop + 1, centerLeft + 1, 2 % playerAmount + 1);
-		changeCell(centerTop + 1, centerLeft, 3 % playerAmount + 1);
+		changeCell(centerTop, centerLeft, 0 % playerAmount + 1, false);
+		changeCell(centerTop, centerLeft + 1, 1 % playerAmount + 1, false);
+		changeCell(centerTop + 1, centerLeft + 1, 2 % playerAmount + 1, false);
+		changeCell(centerTop + 1, centerLeft, 3 % playerAmount + 1, false);
 	}
 
 	/**
@@ -175,7 +183,7 @@ public class Board {
 		}
         if (freeMove || otherCellCount > 0) {
             System.out.println(otherCellCount + " stones have turned. Valid move. Turn start stone.");
-            changeCell(row, column, playerId);
+            changeCell(row, column, playerId, false);
             return true;
         } else {
 			System.out.println("No stones have turned. Move not allowed.");
@@ -215,7 +223,7 @@ public class Board {
         	//Turning of stones is allowed.
             if (turnStones) {
 				System.out.println("  Turning stone at [" + row + "," + column + "].");
-				changeCell(row, column, playerId);
+				changeCell(row, column, playerId, false);
 			}
             return next + 1;
         }

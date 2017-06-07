@@ -2,11 +2,13 @@ package com.cbapps.reversi.client;
 
 import javafx.animation.RotateTransition;
 import javafx.beans.binding.Bindings;
+import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
 import javafx.scene.transform.Rotate;
 import javafx.util.Duration;
 
@@ -37,19 +39,19 @@ public class CellPane extends Pane {
 
 	}
 
-	public void changePossession(Paint color) {
+	public void changePossession(Paint newColor, int millisDelay) {
 		Paint oldColor = playerColor;
-		playerColor = color;
+		playerColor = newColor;
 		stone.setRotate(0);
 		RotateTransition transition = new RotateTransition(Duration.millis(400), stone);
 		transition.setByAngle(180);
 		transition.setAxis(Rotate.X_AXIS);
 		stone.fillProperty().bind(Bindings.when(stone.rotateProperty().greaterThan(90))
-				.then(playerColor).otherwise(oldColor));
+				.then(newColor).otherwise(oldColor));
 		transition.setDelay(Duration.millis(flipDelay));
-		flipDelay += 200;
+		flipDelay += millisDelay;
 		transition.playFromStart();
-		transition.setOnFinished(event -> flipDelay -= 200);
+		transition.setOnFinished(event -> flipDelay -= millisDelay);
 	}
 
 	public void setBorderColor(Color color) {
