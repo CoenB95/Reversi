@@ -92,10 +92,10 @@ public class ClientMain extends Application implements ReversiConstants {
 				}
 			});
 		});
-		loginLayout.getChosenSession().addListener((v1, v2, v3) -> {
+		loginLayout.setOnSessionChosen(v1 -> {
 			loginLayout.disableSessionChosing(true);
 			service.submit(() -> {
-				sendSessionChoice(v3);
+				sendSessionChoice(v1);
 			});
 		});
 		loginScene = new Scene(loginLayout, 400, 400);
