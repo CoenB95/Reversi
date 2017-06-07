@@ -202,9 +202,13 @@ public class ClientMain extends Application implements ReversiConstants {
 					CLIENT_RECEIVE_START_GAME)) != CLIENT_RECEIVE_START_GAME) {
 				System.out.println("a Received '" + command + "'");
 				if (command == CLIENT_RECEIVE_PLAYER_ADDED) {
-					System.out.println("Received player addition notification, expecting object");
 					SimplePlayer otherPlayer = (SimplePlayer) ois.readObject();
-					System.out.print("We'll be playing against " + otherPlayer);
+					if (player.equals(otherPlayer)) {
+						System.out.print("Received our color: " + otherPlayer.getColor());
+						player.setColor((Color) otherPlayer.getColor());
+					} else {
+						System.out.print("We'll be playing against " + otherPlayer);
+					}
 					boardGridPane.addPlayer(otherPlayer);
 				}
 			}
@@ -255,7 +259,7 @@ public class ClientMain extends Application implements ReversiConstants {
 					SimplePlayer p = boardGridPane.getPlayerById(ois.readInt());
 					Platform.runLater(() -> {
 						boardStatusLabel.setText("Waiting for " + p.getName() + "'s move...");
-						boardStatusCell.changePossession(p.getColor());
+						boardStatusCell.changePossession(p.getColor(), 200);
 					});
 				} else if (com == CLIENT_RECEIVE_OTHER_DID_MOVE) {
 					int playerId = ois.readInt();
@@ -276,7 +280,7 @@ public class ClientMain extends Application implements ReversiConstants {
 						boardGridPane.markCells(options, Color.WHITE);
 						Platform.runLater(() -> {
 							boardStatusLabel.setText("It's your turn");
-							boardStatusCell.changePossession(player.getColor());
+							boardStatusCell.changePossession(player.getColor(), 200);
 						});
 						placeFree = false;
 					}

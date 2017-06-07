@@ -36,8 +36,8 @@ public class BoardGridPane extends GridPane implements ReversiConstants {
 				add(c, j, i);
 			}
 		}
-		board.setOnCellChangedListener((row, column, playerId) -> {
-			cells[row][column].changePossession(getPlayerById(playerId).getColor());
+		board.setOnCellChangedListener((row, column, playerId, quick) -> {
+			cells[row][column].changePossession(getPlayerById(playerId).getColor(), quick ? 10 : 200);
 		});
 		setBackground(new Background(new BackgroundFill(Color.GREEN, null, null)));
 	}
@@ -64,6 +64,7 @@ public class BoardGridPane extends GridPane implements ReversiConstants {
 	}
 
 	public SimplePlayer getPlayerById(int playerId) {
+		if (playerId == Board.EMPTY_CELL) return new SimplePlayer("dummy", Color.TRANSPARENT);
 		return otherPlayers.stream().filter(p -> p.getSessionId() == playerId).findFirst().orElse(null);
 	}
 

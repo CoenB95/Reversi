@@ -60,6 +60,14 @@ public class SimplePlayer implements Serializable {
 	}
 
 	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) return true;
+		if (!(obj instanceof SimplePlayer)) return false;
+		return getName() == null ? ((SimplePlayer) obj).getName() == null :
+				getName().equals(((SimplePlayer) obj).getName());
+	}
+
+	@Override
 	public String toString() {
 		return "Player{name=" + name + ", color=" + color + "}";
 	}
