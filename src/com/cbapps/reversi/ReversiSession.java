@@ -39,6 +39,7 @@ public class ReversiSession implements Runnable, ReversiConstants {
 		if (!opened) throw new IllegalStateException("Try to add players while session is closed");
 		int id = players.size()+1;
 		players.add(player);
+		if (players.size() >= 4) opened = false;
 		return id;
 	}
 
