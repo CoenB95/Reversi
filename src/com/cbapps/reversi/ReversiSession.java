@@ -235,7 +235,12 @@ public class ReversiSession implements Runnable, ReversiConstants {
 			throws IOException, IllegalStateException {
 		if (players != null) {
 			for (ReversiPlayer p : players) {
-				p.getOutputStream().close();
+				try {
+					System.out.println("Close connection with " + p.getName());
+					p.getOutputStream().close();
+				} catch (IOException ignored) {
+					System.out.print("Connection was already closed.");
+				}
 			}
 		}
 		throw new IllegalStateException(message);
